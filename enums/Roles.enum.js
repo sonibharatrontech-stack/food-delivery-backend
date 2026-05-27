@@ -1,0 +1,13 @@
+const Roles = {
+  CUSTOMER: "CUSTOMER",
+
+  ADMIN: "ADMIN",
+
+  MASTER: "MASTER",
+
+  RESTAURANT_PARTNER: "RESTAURANT_PARTNER",
+
+  DELIVERY_PARTNER: "DELIVERY_PARTNER",
+};
+
+export default Roles;
