@@ -266,3 +266,76 @@ export const verifyOTP = async (req, res) => {
     });
   }
 };
+
+export const refreshAccessToken = async (req, res) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Refresh token required",
+      });
+    }
+
+    // VERIFY REFRESH TOKEN
+    const decoded = jwt.verify(
+      refreshToken,
+      process.env.JWT_REFRESH_SECRET
+    );
+
+    // CHECK REDIS TOKEN
+    const storedToken = await redisClient.get(
+      `refresh:${decoded.id}`
+    );
+
+    if (!storedToken || storedToken !== refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: "Invalid refresh token",
+      });
+    }
+
+    // FIND USER
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // GENERATE NEW ACCESS TOKEN
+    const accessToken = generateAccessToken(user);
+
+    return res.status(200).json({
+      success: true,
+      accessToken,
+    });
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: "Refresh token expired",
+    });
+  }
+};
+
+export const logout = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // DELETE REFRESH TOKEN
+    await redisClient.del(`refresh:${userId}`);
+
+    return res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

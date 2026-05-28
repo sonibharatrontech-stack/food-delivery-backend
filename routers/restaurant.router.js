@@ -13,6 +13,7 @@ import {
   getFeaturedRestaurants,
   blockRestaurant,
   featureRestaurant,
+  getAllRestaurants,
 } from "../controllers/restaurant.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -34,7 +35,9 @@ router.get("/featured", getFeaturedRestaurants);
 router.get("/nearby", getNearbyRestaurants);
 
 // GET SINGLE RESTAURANT
-router.get("/restaurants/:restaurantId", getRestaurantById);
+router.get("/restaurant/:restaurantId", getRestaurantById);
+// GET ALL RESTAURANTS
+router.get("/get-restaurants", getAllRestaurants);
 
 // ======================================================
 // RESTAURANT PARTNER ROUTES

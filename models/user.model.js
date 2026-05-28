@@ -43,12 +43,7 @@ const userSchema = new mongoose.Schema(
       sparse: true,
     },
 
-    // password: {
-    //   type: String,
-    //   required: false,
-    //   minlength: 6,
-    //   select: false,
-    // },
+ 
 
     roles: [
       {

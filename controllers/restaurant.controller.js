@@ -206,6 +206,113 @@ export const getRestaurantById = async (req, res) => {
 };
 
 // ======================================================
+// GET ALL RESTAURANTS
+// ======================================================
+export const getAllRestaurants = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      city,
+      cuisine,
+      isFeatured,
+      isOpen,
+      sortBy = "createdAt",
+      order = "desc",
+    } = req.query;
+
+    // ================= FILTER =================
+
+    const filter = {
+      status: "ACTIVE",
+    };
+
+    // SEARCH BY NAME
+    if (search) {
+      filter.restaurantName = {
+        $regex: search,
+        $options: "i",
+      };
+    }
+
+    // FILTER BY CITY
+    if (city) {
+      filter["address.city"] = {
+        $regex: city,
+        $options: "i",
+      };
+    }
+
+    // FILTER BY CUISINE
+    if (cuisine) {
+      filter.cuisines = {
+        $in: [cuisine],
+      };
+    }
+
+    // FEATURED FILTER
+    if (isFeatured !== undefined) {
+      filter.isFeatured = isFeatured === "true";
+    }
+
+    // OPEN FILTER
+    if (isOpen !== undefined) {
+      filter.isOpen = isOpen === "true";
+    }
+
+    // ================= PAGINATION =================
+
+    const pageNumber = Number(page);
+
+    const limitNumber = Number(limit);
+
+    const skip = (pageNumber - 1) * limitNumber;
+
+    // ================= SORTING =================
+
+    const sortOptions = {
+      [sortBy]: order === "asc" ? 1 : -1,
+    };
+
+    // ================= QUERY =================
+
+    const restaurants = await Restaurant.find(filter)
+      .populate({
+        path: "partner",
+        select: "businessName ownerName phone",
+      })
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limitNumber);
+
+    // ================= TOTAL COUNT =================
+
+    const totalRestaurants = await Restaurant.countDocuments(filter);
+
+    return res.status(200).json({
+      success: true,
+
+      totalRestaurants,
+
+      currentPage: pageNumber,
+
+      totalPages: Math.ceil(totalRestaurants / limitNumber),
+
+      count: restaurants.length,
+
+      restaurants,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+
+      message: error.message,
+    });
+  }
+};
+
+// ======================================================
 // UPDATE RESTAURANT
 // ======================================================
 export const updateRestaurant = async (req, res) => {
@@ -365,7 +472,9 @@ export const getNearbyRestaurants = async (req, res) => {
         },
       },
     })
-      .select("restaurantName logo coverImage cuisines rating deliveryTime")
+      .select(
+        "restaurantName logo coverImage cuisines rating deliveryTime location",
+      )
       .limit(20);
 
     return res.status(200).json({
@@ -392,7 +501,9 @@ export const getFeaturedRestaurants = async (req, res) => {
       isFeatured: true,
       status: "ACTIVE",
     })
-      .select("restaurantName logo coverImage cuisines rating deliveryTime")
+      .select(
+        "restaurantName logo coverImage cuisines rating deliveryTime location",
+      )
       .sort({ rating: -1 })
       .limit(10);
 
