@@ -279,15 +279,10 @@ export const refreshAccessToken = async (req, res) => {
     }
 
     // VERIFY REFRESH TOKEN
-    const decoded = jwt.verify(
-      refreshToken,
-      process.env.JWT_REFRESH_SECRET
-    );
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
 
     // CHECK REDIS TOKEN
-    const storedToken = await redisClient.get(
-      `refresh:${decoded.id}`
-    );
+    const storedToken = await redisClient.get(`refresh:${decoded.id}`);
 
     if (!storedToken || storedToken !== refreshToken) {
       return res.status(401).json({
