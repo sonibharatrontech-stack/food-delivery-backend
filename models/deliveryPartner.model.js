@@ -1,20 +1,38 @@
 import mongoose from "mongoose";
+import VehicleType from "../enums/VehicleType.enum.js";
+import DeliveryPartnerStatus from "../enums/DeliveryPartnerStatus.enum.js";
 
 const deliveryPartnerSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+      unique: true,
+    },
+
+    partnerId: {
+      type: String,
+      unique: true,
     },
 
     vehicleType: {
       type: String,
-      enum: ["BIKE", "BICYCLE", "SCOOTER"],
+      enum: Object.values(VehicleType),
+      required: true,
     },
 
-    vehicleNumber: String,
+    vehicleNumber: {
+      type: String,
+      required: true,
+      uppercase: true,
+      trim: true,
+    },
 
-    drivingLicense: String,
+    drivingLicense: {
+      type: String,
+      required: true,
+    },
 
     aadhaarCard: String,
 
@@ -22,31 +40,50 @@ const deliveryPartnerSchema = new mongoose.Schema(
 
     profilePhoto: String,
 
-    currentLocation: {
-      type: {
-        type: String,
-        default: "Point",
-      },
-
-      coordinates: {
-        type: [Number],
-      },
-    },
-
     isOnline: {
       type: Boolean,
       default: false,
     },
 
-    isApproved: {
+    isAvailable: {
+      type: Boolean,
+      default: true,
+    },
+
+    isBusy: {
       type: Boolean,
       default: false,
     },
 
-    status: {
-      type: String,
-      enum: ["PENDING", "UNDER_REVIEW", "APPROVED", "REJECTED", "BLOCKED"],
-      default: "PENDING",
+    currentOrder: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Order",
+      default: null,
+    },
+
+    currentLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+
+      coordinates: {
+        type: [Number], // [lng, lat]
+        default: [0, 0],
+      },
+    },
+
+    lastLocationUpdatedAt: Date,
+
+    rating: {
+      type: Number,
+      default: 0,
+    },
+
+    totalRatings: {
+      type: Number,
+      default: 0,
     },
 
     totalDeliveries: {
@@ -54,9 +91,25 @@ const deliveryPartnerSchema = new mongoose.Schema(
       default: 0,
     },
 
-    rating: {
+    totalEarnings: {
       type: Number,
       default: 0,
+    },
+
+    walletBalance: {
+      type: Number,
+      default: 0,
+    },
+
+    status: {
+      type: String,
+      enum: Object.values(DeliveryPartnerStatus),
+      default: "PENDING",
+    },
+
+    documentsVerified: {
+      type: Boolean,
+      default: false,
     },
   },
   {

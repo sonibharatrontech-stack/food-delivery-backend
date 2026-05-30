@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 
+import RestaurantStatus from "../enums/RestaurantStatus.enum.js";
+import RestaurantType from "../enums/RestaurantType.enum.js";
 const restaurantSchema = new mongoose.Schema(
   {
     partner: {
@@ -48,7 +50,15 @@ const restaurantSchema = new mongoose.Schema(
 
       country: String,
     },
-
+    isVeg: {
+      type: Boolean,
+      default: false,
+    },
+    restaurantType: {
+      type: String,
+      enum: Object.values(RestaurantType),
+      default: "NON_VEG",
+    },
     // GEO LOCATION
     location: {
       type: {
@@ -58,7 +68,8 @@ const restaurantSchema = new mongoose.Schema(
       },
 
       coordinates: {
-        type: [Number], // [lng, lat]
+        type: [Number], // [lng, lat],
+        required: true,
       },
     },
 
@@ -146,7 +157,7 @@ const restaurantSchema = new mongoose.Schema(
     // ADMIN STATUS
     status: {
       type: String,
-      enum: ["ACTIVE", "INACTIVE", "BLOCKED"],
+      enum: Object.values(RestaurantStatus),
       default: "ACTIVE",
     },
   },
@@ -158,6 +169,16 @@ const restaurantSchema = new mongoose.Schema(
 restaurantSchema.index({
   location: "2dsphere",
 });
+restaurantSchema.index({ status: 1 });
+
+restaurantSchema.index({ isFeatured: 1 });
+
+restaurantSchema.index({ isOpen: 1 });
+
+restaurantSchema.index({ cuisines: 1 });
+
+restaurantSchema.index({ rating: -1 });
+
+restaurantSchema.index({ restaurantName: "text" });
 
 export default mongoose.model("Restaurant", restaurantSchema);
-

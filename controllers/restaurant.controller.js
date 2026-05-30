@@ -5,586 +5,540 @@ import slugify from "slugify";
 import Restaurant from "../models/restaurant.model.js";
 import RestaurantPartner from "../models/restaurantPartner.model.js";
 
+import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
+
 // ======================================================
 // CREATE RESTAURANT
 // ======================================================
-export const createRestaurant = async (req, res) => {
-  try {
-    const userId = req.user._id;
 
-    // CHECK APPROVED PARTNER
-    const partner = await RestaurantPartner.findOne({
-      user: userId,
-      isApproved: true,
-    });
+export const createRestaurant = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
 
-    if (!partner) {
-      return res.status(403).json({
-        success: false,
-        message: "Restaurant partner not approved",
-      });
-    }
+  // CHECK APPROVED PARTNER
+  const partner = await RestaurantPartner.findOne({
+    user: userId,
+    isApproved: true,
+  });
 
-    const {
-      restaurantName,
-      description,
-      cuisines,
-      tags,
-      phone,
-      email,
-      logo,
-      coverImage,
-      images,
-      address,
-      coordinates,
-      deliveryTime,
-      deliveryRadius,
-      deliveryFee,
-      minimumOrderAmount,
-      averageCostForTwo,
-      openingHours,
-    } = req.body;
+  if (!partner) {
+    throw new ApiError(403, "Restaurant partner not approved");
+  }
 
-    // VALIDATE REQUIRED FIELDS
-    if (!restaurantName) {
-      return res.status(400).json({
-        success: false,
-        message: "Restaurant name is required",
-      });
-    }
+  const {
+    restaurantName,
+    description,
+    cuisines,
+    tags,
+    phone,
+    email,
+    logo,
+    coverImage,
+    images,
+    address,
+    isVeg,
+    restaurantType,
+    coordinates,
+    deliveryTime,
+    deliveryRadius,
+    deliveryFee,
+    minimumOrderAmount,
+    averageCostForTwo,
+    openingHours,
+  } = req.body;
 
-    // VALIDATE COORDINATES
-    if (
-      !coordinates ||
-      !Array.isArray(coordinates) ||
-      coordinates.length !== 2
-    ) {
-      return res.status(400).json({
-        success: false,
-        message: "Valid coordinates are required",
-      });
-    }
+  // VALIDATE REQUIRED FIELDS
+  if (!restaurantName?.trim()) {
+    throw new ApiError(400, "Restaurant name is required");
+  }
 
-    // GENERATE SLUG
-    const slug = slugify(restaurantName, {
-      lower: true,
-      strict: true,
-    });
+  // VALIDATE COORDINATES
+  if (!coordinates || !Array.isArray(coordinates) || coordinates.length !== 2) {
+    throw new ApiError(400, "Valid coordinates are required");
+  }
 
-    // CHECK DUPLICATE
-    const existingRestaurant = await Restaurant.findOne({ slug });
+  // GENERATE SLUG
+  const slug = slugify(restaurantName, {
+    lower: true,
+    strict: true,
+  });
 
-    if (existingRestaurant) {
-      return res.status(400).json({
-        success: false,
-        message: "Restaurant already exists",
-      });
-    }
-    if (openingHours) {
-      const { openTime, closeTime } = openingHours;
-      if (openTime > closeTime) {
-        return res.status(400).json({
-          success: false,
-          message: "Opening time cannot be later than closing time",
-        });
+  // CHECK DUPLICATE
+  const existingRestaurant = await Restaurant.findOne({
+    slug,
+  });
+
+  if (existingRestaurant) {
+    throw new ApiError(400, "Restaurant already exists");
+  }
+
+  // VALIDATE OPENING HOURS
+  if (Array.isArray(openingHours)) {
+    for (const item of openingHours) {
+      if (item.openTime && item.closeTime && item.openTime > item.closeTime) {
+        throw new ApiError(
+          400,
+          `Opening time cannot be later than closing time for ${item.day}`,
+        );
       }
     }
-
-    // CREATE RESTAURANT
-    const restaurant = await Restaurant.create({
-      partner: partner._id,
-
-      restaurantName,
-      slug,
-      description,
-      cuisines,
-      tags,
-      phone,
-      email,
-      logo,
-      coverImage,
-      images,
-      address,
-
-      location: {
-        type: "Point",
-        coordinates,
-      },
-
-      deliveryTime,
-      deliveryRadius,
-      deliveryFee,
-      minimumOrderAmount,
-      averageCostForTwo,
-      openingHours,
-    });
-
-    // UPDATE PARTNER COUNT
-    partner.totalRestaurants += 1;
-
-    await partner.save();
-
-    return res.status(201).json({
-      success: true,
-      message: "Restaurant created successfully",
-      restaurant,
-    });
-  } catch (error) {
-    console.log("CREATE RESTAURANT ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
   }
-};
+
+  // CREATE RESTAURANT
+  const restaurant = await Restaurant.create({
+    partner: partner._id,
+
+    restaurantName,
+    slug,
+    description,
+    cuisines,
+    tags,
+    phone,
+    email,
+    logo,
+    coverImage,
+    images,
+    address,
+    isVeg,
+    restaurantType,
+    location: {
+      type: "Point",
+      coordinates,
+    },
+
+    deliveryTime,
+    deliveryRadius,
+    deliveryFee,
+    minimumOrderAmount,
+    averageCostForTwo,
+    openingHours,
+  });
+
+  // UPDATE PARTNER COUNT
+  partner.totalRestaurants += 1;
+
+  await partner.save();
+
+  return res.status(201).json({
+    success: true,
+    message: "Restaurant created successfully",
+    restaurant,
+  });
+});
 
 // ======================================================
 // GET MY RESTAURANTS
 // ======================================================
-export const getMyRestaurants = async (req, res) => {
-  try {
-    const partner = await RestaurantPartner.findOne({
-      user: req.user._id,
-    });
 
-    if (!partner) {
-      return res.status(404).json({
-        success: false,
-        message: "Partner not found",
-      });
-    }
+export const getMyRestaurants = asyncHandler(async (req, res) => {
+  const partner = await RestaurantPartner.findOne({
+    user: req.user._id,
+  });
 
-    const restaurants = await Restaurant.find({
-      partner: partner._id,
-    }).sort({
-      createdAt: -1,
-    });
-
-    return res.status(200).json({
-      success: true,
-      count: restaurants.length,
-      restaurants,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!partner) {
+    throw new ApiError(404, "Partner not found");
   }
-};
+
+  const restaurants = await Restaurant.find({
+    partner: partner._id,
+  })
+    .sort({
+      createdAt: -1,
+    })
+    .lean();
+
+  return res.status(200).json({
+    success: true,
+    count: restaurants.length,
+    restaurants,
+  });
+});
 
 // ======================================================
 // GET SINGLE RESTAURANT
 // ======================================================
-export const getRestaurantById = async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
 
-    const restaurant = await Restaurant.findById(restaurantId).populate({
-      path: "partner",
-      select: "businessName ownerName phone",
-    });
+export const getRestaurantById = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
 
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: "Restaurant not found",
-      });
-    }
+  const restaurant = await Restaurant.findById(restaurantId).populate({
+    path: "partner",
+    select: "businessName ownerName phone",
+  });
 
-    return res.status(200).json({
-      success: true,
-      restaurant,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
   }
-};
+
+  return res.status(200).json({
+    success: true,
+    restaurant,
+  });
+});
 
 // ======================================================
 // GET ALL RESTAURANTS
 // ======================================================
-export const getAllRestaurants = async (req, res) => {
-  try {
-    const {
-      page = 1,
-      limit = 10,
-      search,
-      city,
-      cuisine,
-      isFeatured,
-      isOpen,
-      sortBy = "createdAt",
-      order = "desc",
-    } = req.query;
 
-    // ================= FILTER =================
+export const getAllRestaurants = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 9,
+    search,
+    city,
+    cuisine,
+    isFeatured,
+    isOpen,
+    restaurantType,
+    isVeg,
+    sortBy,
+    order,
+  } = req.query;
 
-    const filter = {
-      status: "ACTIVE",
+  // ================= FILTER =================
+
+  const filter = {
+    status: "ACTIVE",
+  };
+
+  // SEARCH
+  if (search?.trim()) {
+    filter.restaurantName = {
+      $regex: search.trim(),
+      $options: "i",
     };
+  }
 
-    // SEARCH BY NAME
-    if (search) {
-      filter.restaurantName = {
-        $regex: search,
-        $options: "i",
-      };
-    }
+  // CITY FILTER
+  if (city?.trim()) {
+    filter["address.city"] = {
+      $regex: city.trim(),
+      $options: "i",
+    };
+  }
 
-    // FILTER BY CITY
-    if (city) {
-      filter["address.city"] = {
-        $regex: city,
-        $options: "i",
-      };
-    }
+  // CUISINE FILTER
+  if (cuisine?.trim()) {
+    filter.cuisines = {
+      $in: [cuisine],
+    };
+  }
 
-    // FILTER BY CUISINE
-    if (cuisine) {
-      filter.cuisines = {
-        $in: [cuisine],
-      };
-    }
+  if (restaurantType?.trim()) {
+    filter.restaurantType = restaurantType;
+  }
 
-    // FEATURED FILTER
-    if (isFeatured !== undefined) {
-      filter.isFeatured = isFeatured === "true";
-    }
+  // FEATURED FILTER
+  if (isFeatured !== undefined) {
+    filter.isFeatured = isFeatured === "true";
+  }
 
-    // OPEN FILTER
-    if (isOpen !== undefined) {
-      filter.isOpen = isOpen === "true";
-    }
+  // OPEN FILTER
+  if (isOpen !== undefined) {
+    filter.isOpen = isOpen === "true";
+  }
 
-    // ================= PAGINATION =================
+  // VEG FILTER
+  if (isVeg !== undefined) {
+    filter.isVeg = isVeg === "true";
+  }
+  // ================= PAGINATION =================
 
-    const pageNumber = Number(page);
+  const pageNumber = Math.max(Number(page), 1);
 
-    const limitNumber = Number(limit);
+  const limitNumber = Math.max(Number(limit), 1);
 
-    const skip = (pageNumber - 1) * limitNumber;
+  const skip = (pageNumber - 1) * limitNumber;
 
-    // ================= SORTING =================
+  // ================= SORTING =================
 
-    const sortOptions = {
+  const allowedSortFields = [
+    "createdAt",
+    "restaurantName",
+    "rating",
+    "deliveryTime",
+    "averageCostForTwo",
+    "totalOrders",
+  ];
+
+  let sortOptions = {
+    createdAt: -1,
+  };
+
+  if (sortBy && allowedSortFields.includes(sortBy)) {
+    sortOptions = {
       [sortBy]: order === "asc" ? 1 : -1,
     };
-
-    // ================= QUERY =================
-
-    const restaurants = await Restaurant.find(filter)
-      .populate({
-        path: "partner",
-        select: "businessName ownerName phone",
-      })
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limitNumber);
-
-    // ================= TOTAL COUNT =================
-
-    const totalRestaurants = await Restaurant.countDocuments(filter);
-
-    return res.status(200).json({
-      success: true,
-
-      totalRestaurants,
-
-      currentPage: pageNumber,
-
-      totalPages: Math.ceil(totalRestaurants / limitNumber),
-
-      count: restaurants.length,
-
-      restaurants,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-
-      message: error.message,
-    });
   }
-};
+
+  // ================= QUERY =================
+
+  const restaurants = await Restaurant.find(filter)
+    .populate({
+      path: "partner",
+      select: "businessName ownerName phone",
+    })
+    .sort(sortOptions)
+    .skip(skip)
+    .limit(limitNumber)
+    .lean();
+
+  // ================= TOTAL COUNT =================
+
+  const totalRestaurants = await Restaurant.countDocuments(filter);
+
+  return res.status(200).json({
+    success: true,
+
+    totalRestaurants,
+
+    currentPage: pageNumber,
+
+    totalPages: Math.ceil(totalRestaurants / limitNumber),
+
+    count: restaurants.length,
+
+    restaurants,
+  });
+});
 
 // ======================================================
 // UPDATE RESTAURANT
 // ======================================================
-export const updateRestaurant = async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
 
-    const partner = await RestaurantPartner.findOne({
-      user: req.user.id,
-    });
+export const updateRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
 
-    const restaurant = await Restaurant.findOne({
-      _id: restaurantId,
-      partner: partner._id,
-    });
+  const partner = await RestaurantPartner.findOne({
+    user: req.user.id,
+  });
 
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: "Restaurant not found",
-      });
-    }
+  if (!partner) {
+    throw new ApiError(404, "Partner not found");
+  }
 
-    Object.assign(restaurant, req.body);
+  const restaurant = await Restaurant.findOne({
+    _id: restaurantId,
+    partner: partner._id,
+  });
 
-    // UPDATE LOCATION
-    if (req.body.coordinates) {
-      restaurant.location = {
-        type: "Point",
-        coordinates: req.body.coordinates,
-      };
-    }
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
 
-    await restaurant.save();
+  Object.assign(restaurant, req.body);
 
-    return res.status(200).json({
-      success: true,
-      message: "Restaurant updated successfully",
-      restaurant,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
+  // UPDATE LOCATION
+  if (req.body.coordinates) {
+    restaurant.location = {
+      type: "Point",
+      coordinates: req.body.coordinates,
+    };
+  }
+
+  // UPDATE SLUG
+  if (req.body.restaurantName) {
+    restaurant.slug = slugify(req.body.restaurantName, {
+      lower: true,
+      strict: true,
     });
   }
-};
+
+  await restaurant.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Restaurant updated successfully",
+    restaurant,
+  });
+});
 
 // ======================================================
 // DELETE RESTAURANT
 // ======================================================
-export const deleteRestaurant = async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
 
-    const partner = await RestaurantPartner.findOne({
-      user: req.user.id,
-    });
+export const deleteRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
 
-    const restaurant = await Restaurant.findOneAndDelete({
-      _id: restaurantId,
-      partner: partner._id,
-    });
+  const partner = await RestaurantPartner.findOne({
+    user: req.user.id,
+  });
 
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: "Restaurant not found",
-      });
-    }
-
-    // UPDATE COUNT
-    partner.totalRestaurants -= 1;
-
-    await partner.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Restaurant deleted successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!partner) {
+    throw new ApiError(404, "Partner not found");
   }
-};
+
+  const restaurant = await Restaurant.findOneAndDelete({
+    _id: restaurantId,
+    partner: partner._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  // UPDATE COUNT
+  partner.totalRestaurants -= 1;
+
+  await partner.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Restaurant deleted successfully",
+  });
+});
 
 // ======================================================
 // TOGGLE OPEN/CLOSE
 // ======================================================
-export const toggleRestaurantOpenStatus = async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
 
-    const partner = await RestaurantPartner.findOne({
-      user: req.user.id,
-    });
+export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
 
-    const restaurant = await Restaurant.findOne({
-      _id: restaurantId,
-      partner: partner._id,
-    });
+  const partner = await RestaurantPartner.findOne({
+    user: req.user.id,
+  });
 
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: "Restaurant not found",
-      });
-    }
-
-    restaurant.isOpen = !restaurant.isOpen;
-
-    await restaurant.save();
-
-    return res.status(200).json({
-      success: true,
-      message: restaurant.isOpen ? "Restaurant opened" : "Restaurant closed",
-
-      isOpen: restaurant.isOpen,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!partner) {
+    throw new ApiError(404, "Partner not found");
   }
-};
+
+  const restaurant = await Restaurant.findOne({
+    _id: restaurantId,
+    partner: partner._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  restaurant.isOpen = !restaurant.isOpen;
+
+  await restaurant.save();
+
+  return res.status(200).json({
+    success: true,
+    message: restaurant.isOpen ? "Restaurant opened" : "Restaurant closed",
+
+    isOpen: restaurant.isOpen,
+  });
+});
 
 // ======================================================
 // GET NEARBY RESTAURANTS
 // ======================================================
-export const getNearbyRestaurants = async (req, res) => {
-  try {
-    const { lng, lat } = req.query;
 
-    // VALIDATION
-    if (!lng || !lat) {
-      return res.status(400).json({
-        success: false,
-        message: "Latitude and longitude are required",
-      });
-    }
+export const getNearbyRestaurants = asyncHandler(async (req, res) => {
+  const { lng, lat, isVeg, restaurantType } = req.query;
 
-    const restaurants = await Restaurant.find({
-      status: "ACTIVE",
-
-      isOpen: true,
-
-      location: {
-        $near: {
-          $geometry: {
-            type: "Point",
-            coordinates: [Number(lng), Number(lat)],
-          },
-
-          $maxDistance: 5000,
-        },
-      },
-    })
-      .select(
-        "restaurantName logo coverImage cuisines rating deliveryTime location",
-      )
-      .limit(20);
-
-    return res.status(200).json({
-      success: true,
-      count: restaurants.length,
-      restaurants,
-    });
-  } catch (error) {
-    console.log("NEARBY ERROR:", error);
-
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!lng || !lat) {
+    throw new ApiError(400, "Latitude and Longitude required");
   }
-};
+
+  // CREATE FILTER
+  const filter = {
+    status: "ACTIVE",
+
+    location: {
+      $near: {
+        $geometry: {
+          type: "Point",
+          coordinates: [parseFloat(lng), parseFloat(lat)],
+        },
+
+        $maxDistance: 7000,
+      },
+    },
+  };
+
+  // VEG FILTER
+  if (isVeg !== undefined) {
+    filter.isVeg = isVeg === "true";
+  }
+  if (restaurantType?.trim()) {
+    filter.restaurantType = restaurantType;
+  }
+  const restaurants = await Restaurant.find(filter).lean();
+
+  return res.status(200).json({
+    success: true,
+    count: restaurants.length,
+    restaurants,
+  });
+});
 
 // ======================================================
 // GET FEATURED RESTAURANTS
 // ======================================================
-export const getFeaturedRestaurants = async (req, res) => {
-  try {
-    const restaurants = await Restaurant.find({
-      isFeatured: true,
-      status: "ACTIVE",
-    })
-      .select(
-        "restaurantName logo coverImage cuisines rating deliveryTime location",
-      )
-      .sort({ rating: -1 })
-      .limit(10);
 
-    return res.status(200).json({
-      success: true,
-      restaurants,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-};
+export const getFeaturedRestaurants = asyncHandler(async (req, res) => {
+  const restaurants = await Restaurant.find({
+    isFeatured: true,
+    status: "ACTIVE",
+  })
+    .select(
+      "restaurantName logo coverImage cuisines rating deliveryTime location",
+    )
+    .sort({
+      rating: -1,
+    })
+    .limit(10)
+    .lean();
+
+  return res.status(200).json({
+    success: true,
+    restaurants,
+  });
+});
 
 // ======================================================
 // ADMIN - BLOCK RESTAURANT
 // ======================================================
-export const blockRestaurant = async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
 
-    const restaurant = await Restaurant.findById(restaurantId);
+export const blockRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
 
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: "Restaurant not found",
-      });
-    }
+  const restaurant = await Restaurant.findById(restaurantId);
 
-    restaurant.status = "BLOCKED";
-
-    restaurant.isOpen = false;
-
-    await restaurant.save();
-
-    return res.status(200).json({
-      success: true,
-      message: "Restaurant blocked successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
   }
-};
+
+  restaurant.status = "BLOCKED";
+
+  restaurant.isOpen = false;
+
+  await restaurant.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Restaurant blocked successfully",
+  });
+});
 
 // ======================================================
 // ADMIN - FEATURE RESTAURANT
 // ======================================================
-export const featureRestaurant = async (req, res) => {
-  try {
-    const { restaurantId } = req.params;
 
-    const restaurant = await Restaurant.findById(restaurantId);
+export const featureRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
 
-    if (!restaurant) {
-      return res.status(404).json({
-        success: false,
-        message: "Restaurant not found",
-      });
-    }
+  const restaurant = await Restaurant.findById(restaurantId);
 
-    restaurant.isFeatured = !restaurant.isFeatured;
-
-    await restaurant.save();
-
-    return res.status(200).json({
-      success: true,
-      message: restaurant.isFeatured
-        ? "Restaurant featured"
-        : "Restaurant unfeatured",
-
-      isFeatured: restaurant.isFeatured,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
   }
-};
+
+  restaurant.isFeatured = !restaurant.isFeatured;
+
+  await restaurant.save();
+
+  return res.status(200).json({
+    success: true,
+    message: restaurant.isFeatured
+      ? "Restaurant featured"
+      : "Restaurant unfeatured",
+
+    isFeatured: restaurant.isFeatured,
+  });
+});
