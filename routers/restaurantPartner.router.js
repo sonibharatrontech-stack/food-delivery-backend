@@ -20,7 +20,8 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 import roleMiddleware from "../middlewares/role.middleware.js";
 
 import Roles from "../enums/Roles.enum.js";
-
+import { applyRestaurantPartnerSchema } from "../validations/restaurantPartner.validations.js";
+import validate from "../middlewares/validate.middleware.js";
 const router = express.Router();
 
 // ======================================================
@@ -30,6 +31,7 @@ const router = express.Router();
 // APPLY AS RESTAURANT PARTNER
 router.post(
   "/apply",
+  validate(applyRestaurantPartnerSchema),
   authMiddleware,
   roleMiddleware(Roles.CUSTOMER),
   applyRestaurantPartner,

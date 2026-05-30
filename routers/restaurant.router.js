@@ -21,6 +21,11 @@ import authMiddleware from "../middlewares/auth.middleware.js";
 import roleMiddleware from "../middlewares/role.middleware.js";
 
 import Roles from "../enums/Roles.enum.js";
+import {
+  createRestaurantSchema,
+  updateRestaurantSchema,
+} from "../validations/restaurant.validations.js";
+import validate from "../middlewares/validate.middleware.js";
 
 const router = express.Router();
 
@@ -46,6 +51,7 @@ router.get("/get-restaurants", getAllRestaurants);
 // CREATE RESTAURANT
 router.post(
   "/create-restaurant",
+  validate(createRestaurantSchema),
   authMiddleware,
   roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
   createRestaurant,
@@ -62,6 +68,7 @@ router.get(
 // UPDATE RESTAURANT
 router.put(
   "/update-restaurant/:restaurantId",
+  validate(updateRestaurantSchema),
   authMiddleware,
   roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
   updateRestaurant,

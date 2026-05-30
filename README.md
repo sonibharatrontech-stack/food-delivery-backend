@@ -1,119 +1,383 @@
-# Food Delivery Backend Architecture
+# 🍔 Food Delivery Backend Architecture
 
-## Tech Stack
+Scalable production-level food delivery backend inspired by:
 
-### Frontend
-- React.js
-- TypeScript
-- Ant Design
-- Tailwind CSS
-- Socket.IO Client
+* Swiggy
+* Zomato
+* Uber Eats
+* DoorDash
 
-### Backend
-- Node.js
-- Express.js
-- MongoDB (Mongoose)
-- PostgreSQL
-- Redis
-- JWT Authentication
-- Socket.IO
+Built using modern backend architecture with:
 
----
-
-# System Workflow
-
-## Main Roles
-
-### Customer
-- Login/Register with OTP
-- Browse restaurants
-- Place orders
-- Live order tracking
-- Payments
-- Ratings & reviews
-
-### Restaurant Partner
-- Apply for onboarding
-- Upload documents
-- Manage restaurants
-- Manage menu & orders
-- Open/close restaurant
-
-### Delivery Partner
-- Apply with documents
-- Admin verification
-- Accept/reject deliveries
-- Live location tracking
-- Earnings management
-
-### Admin
-- Verify restaurant partners
-- Verify delivery partners
-- Suspend/block accounts
-- Feature restaurants
-- Manage commissions
-- Analytics & monitoring
-
-### Master Admin
-- Full system access
-- Manage admins
-- Platform controls
-- Global reports
+* Node.js
+* Express.js
+* MongoDB
+* PostgreSQL
+* Redis
+* Socket.IO
+* JWT Authentication
+* Zod Validation
 
 ---
 
-# Database Architecture
+# 🚀 Tech Stack
 
-## MongoDB Usage
-Use MongoDB for:
-- Users
-- Restaurant Partners
-- Restaurants
-- Delivery Partners
-- Orders
-- Menus
-- Reviews
-- Notifications
-- OTP logs
-- Live tracking
+## Frontend
 
-MongoDB is ideal for:
-- Flexible schemas
-- Fast development
-- Geo queries
-- Real-time app data
+* React.js
+* TypeScript
+* Ant Design
+* Tailwind CSS
+* Socket.IO Client
 
 ---
 
-## PostgreSQL Usage
-Use PostgreSQL for:
-- Payments
-- Transactions
-- Wallets
-- Payouts
-- Accounting
-- Commission reports
-- Financial analytics
+## Backend
 
-PostgreSQL is ideal for:
-- ACID transactions
-- Financial consistency
-- Reporting
-- Relational data
+* Node.js
+* Express.js
+* MongoDB (Mongoose)
+* PostgreSQL
+* Redis
+* JWT Authentication
+* Socket.IO
+* Zod Validation
 
 ---
 
-## Redis Usage
-Use Redis for:
-- OTP storage
-- Session storage
-- Rate limiting
-- Caching
-- Live tracking cache
-- Active sockets
-- Temporary tokens
+# 👥 Main Roles
 
-Example Redis Keys:
+## Customer
+
+* OTP Login/Register
+* Browse restaurants
+* Search & filters
+* Place orders
+* Live order tracking
+* Ratings & reviews
+* Payments
+
+---
+
+## Restaurant Partner
+
+* Apply for onboarding
+* Upload business documents
+* Admin approval workflow
+* Manage restaurants
+* Open/Close restaurants
+* Menu management
+* Order handling
+
+---
+
+## Delivery Partner
+
+* Apply with vehicle & documents
+* Live location updates
+* Accept/reject orders
+* Earnings tracking
+* Availability management
+* Real-time order delivery
+
+---
+
+## Admin
+
+* Approve/reject restaurant partners
+* Approve/reject delivery partners
+* Block/suspend accounts
+* Feature restaurants
+* Analytics & monitoring
+
+---
+
+## Master Admin
+
+* Full platform access
+* Manage admins
+* Global controls
+* Reports & analytics
+
+---
+
+# 🗂️ Backend Folder Structure
+
+```text
+src/
+│
+├── config/
+├── controllers/
+├── middlewares/
+├── models/
+├── routes/
+├── validations/
+├── enums/
+├── services/
+├── sockets/
+├── utils/
+├── constants/
+├── uploads/
+├── docs/
+│
+├── app.js
+└── server.js
+```
+
+---
+
+# 🧠 Professional Architecture
+
+## Current Backend Features
+
+### ✅ Zod Validation System
+
+Used for:
+
+* Body validation
+* Query validation
+* Params validation
+* Strong API validation
+
+Example:
+
+```js
+router.post(
+  "/create",
+  validate(createRestaurantSchema),
+  createRestaurant,
+);
+```
+
+---
+
+## ✅ Role-Based Authentication
+
+Supported Roles:
+
+```js
+CUSTOMER
+ADMIN
+MASTER
+RESTAURANT_PARTNER
+DELIVERY_PARTNER
+```
+
+Multi-role support enabled:
+
+Example:
+
+```js
+roles: ["CUSTOMER", "DELIVERY_PARTNER"]
+```
+
+---
+
+## ✅ Centralized Enum System
+
+Enums stored in:
+
+```text
+src/enums/
+```
+
+Examples:
+
+* Roles.enum.js
+* RestaurantStatus.enum.js
+* RestaurantType.enum.js
+* VehicleType.enum.js
+* DeliveryPartnerStatus.enum.js
+* OrderStatus.enum.js
+
+---
+
+# 🍽️ Restaurant System
+
+## Restaurant Features
+
+### Restaurant Types
+
+```text
+VEG
+NON_VEG
+PURE_VEG
+```
+
+### Restaurant Status
+
+```text
+ACTIVE
+INACTIVE
+BLOCKED
+```
+
+### Restaurant Controls
+
+* Open/Close
+* Featured restaurants
+* Delivery settings
+* Ratings
+* Geo location
+* Search & filters
+
+---
+
+# 🔍 Restaurant Filtering System
+
+Supported filters:
+
+```text
+search
+city
+cuisine
+isFeatured
+isOpen
+isVeg
+restaurantType
+rating
+sorting
+pagination
+```
+
+Example API:
+
+```bash
+GET /api/restaurants?city=Mumbai&isVeg=true
+```
+
+---
+
+# 📍 Geo Location System
+
+## MongoDB 2dsphere Index
+
+```js
+restaurantSchema.index({
+  location: "2dsphere",
+});
+```
+
+Used for:
+
+* Nearby restaurants
+* Delivery tracking
+* Driver matching
+
+---
+
+## Nearby Restaurant Query
+
+```js
+$near
+$geometry
+$maxDistance
+```
+
+---
+
+# 🚚 Delivery Partner System
+
+## Delivery Partner Workflow
+
+```text
+Apply
+   ↓
+Upload Documents
+   ↓
+PENDING
+   ↓
+Admin Verification
+   ↓
+APPROVED
+   ↓
+User Role Updated
+   ↓
+Can Accept Orders
+```
+
+---
+
+## Delivery Partner Features
+
+### Vehicle Types
+
+```text
+BIKE
+BICYCLE
+SCOOTER
+```
+
+### Delivery Partner Status
+
+```text
+PENDING
+UNDER_REVIEW
+APPROVED
+REJECTED
+BLOCKED
+```
+
+---
+
+## Live Tracking Features
+
+* Real-time location updates
+* Online/Offline status
+* Nearby order detection
+* Order assignment
+* Delivery status updates
+
+---
+
+# 🔐 Authentication System
+
+## OTP Authentication Workflow
+
+```text
+Enter Phone
+     ↓
+Generate OTP
+     ↓
+Store OTP in Redis
+     ↓
+Verify OTP
+     ↓
+Generate JWT
+     ↓
+Login Success
+```
+
+---
+
+## JWT Strategy
+
+### Access Token
+
+* Short expiry
+* API authentication
+
+### Refresh Token
+
+* Long expiry
+* Session management
+
+---
+
+# ⚡ Redis Usage
+
+Used for:
+
+* OTP storage
+* Rate limiting
+* Session storage
+* Caching
+* Socket mapping
+* Live tracking cache
+
+---
+
+## Example Redis Keys
 
 ```bash
 otp:9876543210
@@ -124,413 +388,243 @@ socket:userId
 
 ---
 
-# OTP Authentication Workflow
+# 🛡️ Security Features
 
-## Register/Login Flow
+## Implemented
 
-```text
-User enters phone
-      ↓
-Check user exists
-      ↓
-Generate OTP
-      ↓
-Store OTP in Redis
-      ↓
-Send SMS
-      ↓
-Verify OTP
-      ↓
-Generate JWT Token
-      ↓
-Login Success
-```
+* JWT Authentication
+* Role-based access
+* OTP expiry
+* Rate limiting
+* Validation middleware
+* Error handling middleware
+* Protected routes
 
 ---
 
-# Redis OTP Strategy
+# 📦 MongoDB Usage
 
-## Save OTP
+MongoDB stores:
 
-```js
-await redisClient.set(`otp:${phone}`, otp, {
-  EX: 300,
-});
-```
-
-## Auto Delete
-Redis automatically deletes OTP after expiry.
-
----
-
-# OTP Security Improvements
-
-## Rate Limiting
-
-Prevent OTP spam:
-
-```text
-Max 5 OTP/hour
-```
-
-Redis Key:
-
-```text
-otp_attempts:9876543210
-```
+* Users
+* Restaurants
+* Restaurant Partners
+* Delivery Partners
+* Orders
+* Menus
+* Reviews
+* Notifications
+* Live locations
 
 ---
 
-## Resend Cooldown
+# 🧾 PostgreSQL Usage
 
-Prevent instant resend:
+PostgreSQL stores:
 
-```text
-30 seconds cooldown
-```
-
-Redis Key:
-
-```text
-otp_resend:9876543210
-```
+* Payments
+* Wallets
+* Transactions
+* Commission reports
+* Financial analytics
+* Payouts
 
 ---
 
-# Restaurant Partner Workflow
+# 🔌 Socket.IO Features
 
-## Onboarding Flow
+## Customer
 
-```text
-User applies as Restaurant Partner
-        ↓
-Documents uploaded
-        ↓
-Status = PENDING
-        ↓
-Admin reviews documents
-        ↓
-APPROVED / REJECTED
-        ↓
-Partner can create restaurants
-```
+* Live order tracking
+* Delivery tracking
+* Notifications
 
 ---
 
-# Restaurant Workflow
+## Restaurant
 
-## Restaurant Creation Flow
-
-```text
-Approved Partner
-      ↓
-Create Restaurant
-      ↓
-Generate Slug
-      ↓
-Save Geo Location
-      ↓
-Restaurant Live
-```
+* New order alerts
+* Live order updates
 
 ---
 
-# Slugify Usage
+## Delivery Partner
 
-## Purpose
-Creates SEO-friendly URLs.
+* Nearby order requests
+* Live delivery tracking
+* Online/offline updates
+
+---
+
+# 🧪 Validation Architecture
+
+Using:
+
+* Zod
+* Custom validate middleware
 
 Example:
 
-```text
-Pizza Hut Mumbai
-↓
-pizza-hut-mumbai
-```
-
-## Usage
-
 ```js
-const slug = slugify(restaurantName, {
-  lower: true,
-  strict: true,
-});
+req.body = await schema.parseAsync(req.body);
 ```
 
----
+Validation includes:
 
-# Restaurant Features
-
-## Restaurant Status
-
-```text
-ACTIVE
-INACTIVE
-BLOCKED
-```
-
-## Restaurant Controls
-- Open/Close restaurant
-- Delivery settings
-- Featured restaurants
-- Menu management
-- Order management
-- Ratings
+* Restaurant validation
+* Partner validation
+* Delivery partner validation
+* Auth validation
 
 ---
 
-# Delivery Partner Workflow
+# 📊 Pagination & Sorting
 
-## Onboarding
+Implemented:
 
-```text
-Delivery Partner Applies
-        ↓
-Upload Documents
-        ↓
-Admin Verification
-        ↓
-Approval
-        ↓
-Can Accept Orders
-```
+* Pagination
+* Search
+* Filtering
+* Dynamic sorting
 
----
-
-# Geo Location System
-
-## MongoDB 2dsphere Index
-
-```js
-restaurantSchema.index({
-  location: "2dsphere",
-});
-```
-
-## Nearby Restaurants Query
-
-```js
-$near
-$geometry
-$maxDistance
-```
-
-Used for:
-- Nearby restaurants
-- Delivery tracking
-- Driver matching
-
----
-
-# Socket.IO Usage
-
-## Real-time Features
-
-### Customer
-- Live order status
-- Delivery tracking
-- Notifications
-
-### Restaurant
-- New order alerts
-- Order updates
-
-### Delivery Partner
-- New delivery requests
-- Location updates
-
----
-
-# Authentication Strategy
-
-## JWT Tokens
-
-### Access Token
-- Short expiry
-- API authentication
-
-### Refresh Token
-- Long expiry
-- Session renewal
-
----
-
-# Recommended Project Structure
-
-```text
-src/
-│
-├── config/
-├── controllers/
-├── services/
-├── routes/
-├── middlewares/
-├── models/
-├── utils/
-├── validations/
-├── sockets/
-├── redis/
-├── jobs/
-├── constants/
-├── enums/
-└── app.js
-```
-
----
-
-# Professional Backend Practices
-
-## Always Use
-- Controller-Service pattern
-- Redis caching
-- Proper validation
-- JWT auth middleware
-- Role-based access
-- Rate limiting
-- Pagination
-- Error handling middleware
-- Centralized responses
-- Environment variables
-
----
-
-# Suggested Future Modules
-
-## Customer Side
-- Cart
-- Wishlist
-- Coupons
-- Wallet
-- Referral system
-
-## Restaurant Side
-- Menu categories
-- Inventory
-- Analytics
-- Earnings dashboard
-
-## Delivery Side
-- Heat maps
-- Route optimization
-- Incentives
-
-## Admin Side
-- Fraud detection
-- Commission management
-- Revenue reports
-- Live monitoring
-
----
-
-# Redis Connection Setup
-
-```js
-import { createClient } from "redis";
-
-const redisClient = createClient({
-  url: process.env.REDIS_URL,
-});
-
-redisClient.on("error", (err) => {
-  console.log("Redis Error:", err);
-});
-
-await redisClient.connect();
-
-export default redisClient;
-```
-
----
-
-# Check Redis Working
-
-## Method 1
+Example:
 
 ```bash
-redis-server
+?page=1&limit=10&sortBy=rating&order=desc
 ```
 
-## Method 2
+---
+
+# 🏗️ Professional Backend Practices
+
+## Current Architecture Includes
+
+✅ Async handler
+✅ Centralized error handling
+✅ Enum architecture
+✅ Validation middleware
+✅ Geo queries
+✅ JWT authentication
+✅ Multi-role system
+✅ Redis caching
+✅ Socket architecture
+✅ Pagination & filtering
+✅ Scalable folder structure
+✅ Database indexing
+
+---
+
+# 📈 MongoDB Indexing
+
+Implemented indexes:
 
 ```js
-await redisClient.set("test", "hello");
+restaurantSchema.index({ location: "2dsphere" });
 
-const value = await redisClient.get("test");
+restaurantSchema.index({ status: 1 });
 
-console.log(value);
-```
+restaurantSchema.index({ isFeatured: 1 });
 
-Expected:
+restaurantSchema.index({ isOpen: 1 });
 
-```text
-hello
+restaurantSchema.index({ cuisines: 1 });
+
+restaurantSchema.index({ rating: -1 });
+
+restaurantSchema.index({ restaurantName: "text" });
 ```
 
 ---
 
-# Restaurant Partner Main Controllers
-
-## Partner Controllers
-- applyRestaurantPartner
-- getMyPartnerProfile
-- updatePartnerProfile
-- approvePartner
-- rejectPartner
-- suspendPartner
-- getPendingPartners
-
----
-
-# Restaurant Main Controllers
+# 🎯 Current Main Controllers
 
 ## Restaurant Controllers
-- createRestaurant
-- updateRestaurant
-- deleteRestaurant
-- getMyRestaurants
-- getNearbyRestaurants
-- getFeaturedRestaurants
-- toggleRestaurantOpenStatus
-- blockRestaurant
-- featureRestaurant
+
+* createRestaurant
+* updateRestaurant
+* deleteRestaurant
+* getMyRestaurants
+* getRestaurantById
+* getAllRestaurants
+* getNearbyRestaurants
+* getFeaturedRestaurants
+* toggleRestaurantOpenStatus
+* featureRestaurant
+* blockRestaurant
 
 ---
 
-# Object.assign Usage
+## Restaurant Partner Controllers
 
-```js
-Object.assign(restaurant, req.body);
-```
-
-Used for:
-- Updating multiple fields dynamically
-- Cleaner update logic
-- Avoid repetitive assignments
-
-Equivalent to:
-
-```js
-restaurant.name = req.body.name;
-restaurant.phone = req.body.phone;
-restaurant.email = req.body.email;
-```
+* applyRestaurantPartner
+* approvePartner
+* rejectPartner
+* suspendPartner
+* getPendingPartners
+* getMyPartnerProfile
 
 ---
 
-# Final Architecture Goal
+## Delivery Partner Controllers
 
-Build a scalable production-level food delivery platform similar to:
+* applyDeliveryPartner
+* approveDeliveryPartner
+* rejectDeliveryPartner
+* blockDeliveryPartner
+* updateLiveLocation
+* goOnline
+* goOffline
+* acceptOrder
+* getAvailableOrders
 
-- Swiggy
-- Zomato
-- Uber Eats
-- DoorDash
+---
 
-Using:
-- Clean architecture
-- Scalable backend
-- Redis optimization
-- Real-time sockets
-- Professional workflows
-- Secure authentication
+# 🚀 Future Modules
 
+## Customer
+
+* Wishlist
+* Coupons
+* Wallet
+* Referral system
+
+---
+
+## Restaurant
+
+* Inventory
+* Restaurant analytics
+* Earnings dashboard
+
+---
+
+## Delivery
+
+* Route optimization
+* Heat maps
+* Incentives
+
+---
+
+## Admin
+
+* Fraud detection
+* Revenue reports
+* Live dashboards
+* Commission management
+
+---
+
+# 🎯 Final Goal
+
+Build a highly scalable production-ready food delivery platform with:
+
+* Clean Architecture
+* Enterprise Backend Design
+* Redis Optimization
+* Real-time Socket System
+* Professional Validation System
+* Geo-based Search
+* Multi-role Authentication
+* Advanced Filtering & Pagination
+* Scalable Database Design

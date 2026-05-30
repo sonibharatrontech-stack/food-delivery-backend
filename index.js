@@ -10,7 +10,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 
-import authRoutes from "./auth/auth.routers.js";
+import authRoutes from "./src/auth/auth.routers.js";
 import redisClient from "./config/redis.js";
 import Roles from "./enums/Roles.enum.js";
 import connectDB from "./config/db.js";
