@@ -17,6 +17,10 @@ import connectDB from "./config/db.js";
 import RestaurantPartnerRoutes from "./routers/restaurantPartner.router.js";
 import RestaurantRoutes from "./routers/restaurant.router.js";
 import userRoutes from "./routers/user.router.js";
+import orderRoutes from "./routers/order.routes.js";
+import menuRoutes from "./routers/menu.routes.js";
+import cartRoutes from "./routers/cart.routes.js";
+import reviewRoutes from "./routers/review.routes.js";
 import deliveryPartnerRoutes from "./routers/deliveryPartner.router.js";
 import { connectRedis } from "./config/redis.js";
 
@@ -49,6 +53,10 @@ app.use("/api/restaurant", RestaurantRoutes);
 app.use("/api/restaurant-partner", RestaurantPartnerRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/delivery-partner", deliveryPartnerRoutes);
+app.use("/api/order", orderRoutes);
+app.use("/api/menu", menuRoutes);
+app.use("/api/cart", cartRoutes);
+app.use("/api/review", reviewRoutes);
 // Port
 const PORT = process.env.PORT || 5000;
 

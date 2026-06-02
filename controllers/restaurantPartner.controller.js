@@ -88,6 +88,7 @@ export const getMyPartnerProfile = asyncHandler(async (req, res) => {
   });
 });
 
+// ======ADMIN ROUTES BELOW=====
 // ======================================================
 // UPDATE PARTNER PROFILE
 // ======================================================
@@ -228,7 +229,12 @@ export const rejectPartner = asyncHandler(async (req, res) => {
   partner.rejectionReason = reason;
 
   await partner.save();
-
+  // REMOVE ROLE FROM USER
+  await User.findByIdAndUpdate(partner.user, {
+    $pull: {
+      roles: Roles.RESTAURANT_PARTNER,
+    },
+  });
   return res.status(200).json({
     success: true,
     message: "Restaurant partner rejected successfully",
@@ -253,7 +259,12 @@ export const suspendPartner = asyncHandler(async (req, res) => {
   partner.isApproved = false;
 
   await partner.save();
-
+  // REMOVE ROLE FROM USER
+  await User.findByIdAndUpdate(partner.user, {
+    $pull: {
+      roles: Roles.RESTAURANT_PARTNER,
+    },
+  });
   // BLOCK ALL RESTAURANTS
   await restaurantModel.updateMany(
     {

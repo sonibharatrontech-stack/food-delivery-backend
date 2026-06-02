@@ -1,7 +1,5 @@
 // routes/restaurant.routes.js
-
 import express from "express";
-
 import {
   createRestaurant,
   getMyRestaurants,
@@ -41,6 +39,7 @@ router.get("/nearby", getNearbyRestaurants);
 
 // GET SINGLE RESTAURANT
 router.get("/restaurant/:restaurantId", getRestaurantById);
+
 // GET ALL RESTAURANTS
 router.get("/get-restaurants", getAllRestaurants);
 

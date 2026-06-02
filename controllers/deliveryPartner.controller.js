@@ -7,7 +7,7 @@ import ApiError from "../utils/ApiError.js";
 import Roles from "../enums/Roles.enum.js";
 // ======================================================
 // APPLY DELIVERY PARTNER
-// POST /api/delivery-partner/apply
+
 // ======================================================
 
 export const applyDeliveryPartner = asyncHandler(async (req, res) => {
@@ -64,7 +64,7 @@ export const applyDeliveryPartner = asyncHandler(async (req, res) => {
 
 // ======================================================
 // GET MY DELIVERY PROFILE
-// GET /api/delivery-partner/me
+
 // ======================================================
 
 export const getMyDeliveryProfile = asyncHandler(async (req, res) => {
@@ -86,7 +86,7 @@ export const getMyDeliveryProfile = asyncHandler(async (req, res) => {
 
 // ======================================================
 // UPDATE DELIVERY PARTNER PROFILE
-// PUT /api/delivery-partner/update-profile
+
 // ======================================================
 
 export const updateDeliveryPartnerProfile = asyncHandler(async (req, res) => {
@@ -143,7 +143,7 @@ export const updateDeliveryPartnerProfile = asyncHandler(async (req, res) => {
 
 // ======================================================
 // ADMIN - GET ALL DELIVERY PARTNERS
-// GET /api/admin/delivery-partners
+
 // ======================================================
 
 export const getAllDeliveryPartners = asyncHandler(async (req, res) => {
@@ -219,7 +219,7 @@ export const getAllDeliveryPartners = asyncHandler(async (req, res) => {
 
 // ======================================================
 // ADMIN - GET SINGLE DELIVERY PARTNER
-// GET /api/admin/delivery-partner/:id
+
 // ======================================================
 
 export const getDeliveryPartnerById = asyncHandler(async (req, res) => {
@@ -241,12 +241,7 @@ export const getDeliveryPartnerById = asyncHandler(async (req, res) => {
 
 // ======================================================
 // ADMIN - APPROVE DELIVERY PARTNER
-// PATCH /api/admin/delivery-partner/:id/approve
-// ======================================================
 
-// ======================================================
-// ADMIN - APPROVE DELIVERY PARTNER
-// PATCH /api/admin/delivery-partner/:id/approve
 // ======================================================
 
 export const approveDeliveryPartner = asyncHandler(async (req, res) => {
@@ -292,7 +287,7 @@ export const approveDeliveryPartner = asyncHandler(async (req, res) => {
 
 // ======================================================
 // ADMIN - REJECT DELIVERY PARTNER
-// PATCH /api/admin/delivery-partner/:id/reject
+
 // ======================================================
 
 export const rejectDeliveryPartner = asyncHandler(async (req, res) => {
@@ -316,11 +311,7 @@ export const rejectDeliveryPartner = asyncHandler(async (req, res) => {
 
 // ======================================================
 // ADMIN - BLOCK DELIVERY PARTNER
-// PATCH /api/admin/delivery-partner/:id/block
-// ======================================================
 
-// ======================================================
-// ADMIN - BLOCK DELIVERY PARTNER
 // ======================================================
 
 export const blockDeliveryPartner = asyncHandler(async (req, res) => {

@@ -1,10 +1,10 @@
-// models/order.model.js
-
 import mongoose from "mongoose";
 
-// ======================================================
-// ORDER ITEM SCHEMA
-// ======================================================
+/*
+|------------------------------------------------------------------
+| ORDER ITEM SCHEMA
+|------------------------------------------------------------------
+*/
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -17,10 +17,7 @@ const orderItemSchema = new mongoose.Schema(
     name: {
       type: String,
       required: true,
-      trim: true,
     },
-
-    image: String,
 
     quantity: {
       type: Number,
@@ -31,13 +28,10 @@ const orderItemSchema = new mongoose.Schema(
     price: {
       type: Number,
       required: true,
-      min: 0,
     },
 
-    totalPrice: {
-      type: Number,
-      required: true,
-      min: 0,
+    image: {
+      type: String,
     },
 
     isVeg: {
@@ -50,32 +44,60 @@ const orderItemSchema = new mongoose.Schema(
   },
 );
 
-// ======================================================
-// ORDER SCHEMA
-// ======================================================
+/*
+|------------------------------------------------------------------
+| DELIVERY ADDRESS SCHEMA
+|------------------------------------------------------------------
+*/
+
+const deliveryAddressSchema = new mongoose.Schema(
+  {
+    street: String,
+
+    city: String,
+
+    state: String,
+
+    pincode: String,
+
+    landmark: String,
+
+    label: {
+      type: String,
+      enum: ["HOME", "WORK", "OTHER"],
+      default: "HOME",
+    },
+
+    location: {
+      lat: Number,
+
+      lng: Number,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+/*
+|------------------------------------------------------------------
+| ORDER SCHEMA
+|------------------------------------------------------------------
+*/
 
 const orderSchema = new mongoose.Schema(
   {
-    // ORDER ID
-    orderId: {
-      type: String,
-      unique: true,
-    },
-
-    // CUSTOMER
     customer: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
 
-    // RESTAURANT
     restaurant: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Restaurant",
       required: true,
     },
-
     // DELIVERY PARTNER
     deliveryPartner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -83,76 +105,10 @@ const orderSchema = new mongoose.Schema(
       default: null,
     },
 
-    // ORDER ITEMS
-    items: {
-      type: [orderItemSchema],
-      required: true,
-      validate: [(val) => val.length > 0, "Order items required"],
-    },
+    items: [orderItemSchema],
 
-    // DELIVERY ADDRESS
-    deliveryAddress: {
-      fullName: {
-        type: String,
-        required: true,
-      },
+    deliveryAddress: deliveryAddressSchema,
 
-      phone: {
-        type: String,
-        required: true,
-      },
-
-      addressLine: {
-        type: String,
-        required: true,
-      },
-
-      landmark: String,
-
-      city: {
-        type: String,
-        required: true,
-      },
-
-      state: {
-        type: String,
-        required: true,
-      },
-
-      pincode: {
-        type: String,
-        required: true,
-      },
-
-      location: {
-        type: {
-          type: String,
-          enum: ["Point"],
-          default: "Point",
-        },
-
-        coordinates: {
-          type: [Number], // [lng, lat]
-          required: true,
-        },
-      },
-    },
-
-    // RESTAURANT LOCATION
-    restaurantLocation: {
-      type: {
-        type: String,
-        enum: ["Point"],
-        default: "Point",
-      },
-
-      coordinates: {
-        type: [Number], // [lng, lat]
-        required: true,
-      },
-    },
-
-    // PAYMENT
     paymentMethod: {
       type: String,
       enum: ["COD", "ONLINE"],
@@ -165,16 +121,25 @@ const orderSchema = new mongoose.Schema(
       default: "PENDING",
     },
 
-    // PRICE DETAILS
-    itemsPrice: {
-      type: Number,
-      required: true,
-      default: 0,
+    orderStatus: {
+      type: String,
+      enum: [
+        "PLACED",
+        "CONFIRMED",
+        "PREPARING",
+        "READY_FOR_PICKUP", // Food ready for delivery partner
+        "ASSIGNED", // Delivery partner assigned
+        "PICKED_UP",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+        "CANCELLED",
+      ],
+      default: "PLACED",
     },
 
-    taxAmount: {
+    subtotal: {
       type: Number,
-      default: 0,
+      required: true,
     },
 
     deliveryFee: {
@@ -182,7 +147,12 @@ const orderSchema = new mongoose.Schema(
       default: 0,
     },
 
-    discountAmount: {
+    taxes: {
+      type: Number,
+      default: 0,
+    },
+
+    discount: {
       type: Number,
       default: 0,
     },
@@ -190,104 +160,17 @@ const orderSchema = new mongoose.Schema(
     totalAmount: {
       type: Number,
       required: true,
-      default: 0,
     },
 
-    // ORDER STATUS
-    orderStatus: {
-      type: String,
-      enum: [
-        "PLACED",
-        "CONFIRMED",
-        "PREPARING",
-        "READY_FOR_PICKUP",
-        "ASSIGNED",
-        "PICKED_UP",
-        "ON_THE_WAY",
-        "DELIVERED",
-        "CANCELLED",
-      ],
-      default: "PLACED",
-    },
-
-    // DELIVERY DETAILS
-    estimatedDeliveryTime: Date,
-
-    deliveredAt: Date,
-
-    cancelledAt: Date,
-
-    cancellationReason: String,
-
-    // SPECIAL INSTRUCTIONS
-    notes: String,
-
-    // RATINGS
-    isRated: {
-      type: Boolean,
-      default: false,
-    },
-
-    rating: {
+    estimatedDeliveryTime: {
       type: Number,
-      min: 1,
-      max: 5,
+      default: 30,
     },
-
-    review: String,
   },
   {
     timestamps: true,
   },
 );
-
-// ======================================================
-// INDEXES
-// ======================================================
-
-// GEO INDEX
-orderSchema.index({
-  restaurantLocation: "2dsphere",
-});
-
-// CUSTOMER INDEX
-orderSchema.index({
-  customer: 1,
-  createdAt: -1,
-});
-
-// RESTAURANT INDEX
-orderSchema.index({
-  restaurant: 1,
-  createdAt: -1,
-});
-
-// DELIVERY PARTNER INDEX
-orderSchema.index({
-  deliveryPartner: 1,
-  orderStatus: 1,
-});
-
-// ORDER STATUS INDEX
-orderSchema.index({
-  orderStatus: 1,
-});
-
-// ======================================================
-// PRE SAVE HOOK
-// ======================================================
-
-orderSchema.pre("save", function (next) {
-  if (!this.orderId) {
-    this.orderId = `ORD-${Date.now()}`;
-  }
-
-  next();
-});
-
-// ======================================================
-// MODEL
-// ======================================================
 
 const Order = mongoose.model("Order", orderSchema);
 

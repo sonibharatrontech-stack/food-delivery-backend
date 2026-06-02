@@ -122,7 +122,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
   return res.status(201).json({
     success: true,
     message: "Restaurant created successfully",
-    restaurant,
+    data: restaurant,
   });
 });
 
@@ -150,7 +150,7 @@ export const getMyRestaurants = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     count: restaurants.length,
-    restaurants,
+    data: restaurants,
   });
 });
 
@@ -172,7 +172,7 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    restaurant,
+    data: restaurant,
   });
 });
 
@@ -298,7 +298,7 @@ export const getAllRestaurants = asyncHandler(async (req, res) => {
 
     count: restaurants.length,
 
-    restaurants,
+    data: restaurants,
   });
 });
 
@@ -349,7 +349,7 @@ export const updateRestaurant = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     message: "Restaurant updated successfully",
-    restaurant,
+    data: restaurant,
   });
 });
 
@@ -463,7 +463,7 @@ export const getNearbyRestaurants = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     count: restaurants.length,
-    restaurants,
+    data: restaurants,
   });
 });
 
@@ -487,7 +487,7 @@ export const getFeaturedRestaurants = asyncHandler(async (req, res) => {
 
   return res.status(200).json({
     success: true,
-    restaurants,
+    data: restaurants,
   });
 });
 

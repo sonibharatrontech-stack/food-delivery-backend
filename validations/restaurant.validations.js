@@ -50,7 +50,7 @@ export const createRestaurantSchema = z.object({
     .max(100, "Restaurant name too long"),
 
   description: z.string().max(1000, "Description too long").optional(),
-
+  rating: z.coerce.number().min(0).max(5).optional(),
   cuisines: z
     .array(z.string().trim().min(1))
     .min(1, "At least one cuisine is required"),
