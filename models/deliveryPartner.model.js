@@ -1,9 +1,16 @@
 import mongoose from "mongoose";
+
 import VehicleType from "../enums/VehicleType.enum.js";
 import DeliveryPartnerStatus from "../enums/DeliveryPartnerStatus.enum.js";
 
 const deliveryPartnerSchema = new mongoose.Schema(
   {
+    /*
+    |------------------------------------------------------------------
+    | USER REFERENCE
+    |------------------------------------------------------------------
+    */
+
     user: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -11,10 +18,22 @@ const deliveryPartnerSchema = new mongoose.Schema(
       unique: true,
     },
 
+    /*
+    |------------------------------------------------------------------
+    | PARTNER UNIQUE ID
+    |------------------------------------------------------------------
+    */
+
     partnerId: {
       type: String,
       unique: true,
     },
+
+    /*
+    |------------------------------------------------------------------
+    | VEHICLE DETAILS
+    |------------------------------------------------------------------
+    */
 
     vehicleType: {
       type: String,
@@ -40,6 +59,12 @@ const deliveryPartnerSchema = new mongoose.Schema(
 
     profilePhoto: String,
 
+    /*
+    |------------------------------------------------------------------
+    | ONLINE STATUS
+    |------------------------------------------------------------------
+    */
+
     isOnline: {
       type: Boolean,
       default: false,
@@ -55,11 +80,23 @@ const deliveryPartnerSchema = new mongoose.Schema(
       default: false,
     },
 
+    /*
+    |------------------------------------------------------------------
+    | CURRENT ACTIVE ORDER
+    |------------------------------------------------------------------
+    */
+
     currentOrder: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Order",
       default: null,
     },
+
+    /*
+    |------------------------------------------------------------------
+    | LIVE LOCATION (GeoJSON)
+    |------------------------------------------------------------------
+    */
 
     currentLocation: {
       type: {
@@ -69,12 +106,34 @@ const deliveryPartnerSchema = new mongoose.Schema(
       },
 
       coordinates: {
-        type: [Number], // [lng, lat]
+        type: [Number],
+
+        // [lng, lat]
         default: [0, 0],
       },
     },
 
-    lastLocationUpdatedAt: Date,
+    /*
+    |------------------------------------------------------------------
+    | LOCATION TRACKING
+    |------------------------------------------------------------------
+    */
+
+    lastLocationUpdatedAt: {
+      type: Date,
+      default: null,
+    },
+
+    lastActiveAt: {
+      type: Date,
+      default: Date.now,
+    },
+
+    /*
+    |------------------------------------------------------------------
+    | PERFORMANCE ANALYTICS
+    |------------------------------------------------------------------
+    */
 
     rating: {
       type: Number,
@@ -91,6 +150,22 @@ const deliveryPartnerSchema = new mongoose.Schema(
       default: 0,
     },
 
+    acceptanceRate: {
+      type: Number,
+      default: 100,
+    },
+
+    rejectionCount: {
+      type: Number,
+      default: 0,
+    },
+
+    /*
+    |------------------------------------------------------------------
+    | EARNINGS
+    |------------------------------------------------------------------
+    */
+
     totalEarnings: {
       type: Number,
       default: 0,
@@ -100,6 +175,12 @@ const deliveryPartnerSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+
+    /*
+    |------------------------------------------------------------------
+    | ACCOUNT STATUS
+    |------------------------------------------------------------------
+    */
 
     status: {
       type: String,
@@ -117,8 +198,19 @@ const deliveryPartnerSchema = new mongoose.Schema(
   },
 );
 
+/*
+|------------------------------------------------------------------
+| GEO INDEX
+|------------------------------------------------------------------
+*/
+
 deliveryPartnerSchema.index({
   currentLocation: "2dsphere",
 });
 
-export default mongoose.model("DeliveryPartner", deliveryPartnerSchema);
+const DeliveryPartner = mongoose.model(
+  "DeliveryPartner",
+  deliveryPartnerSchema,
+);
+
+export default DeliveryPartner;

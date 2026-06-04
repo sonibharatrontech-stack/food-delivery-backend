@@ -148,7 +148,7 @@ export const deleteMenuItem = asyncHandler(async (req, res) => {
 });
 
 // ========search manu item by name========
-export const searchMenuItems = asyncHandler(async (req, res) => {
+export const searchMenuItemsbyRestuarnt = asyncHandler(async (req, res) => {
   const { restaurantId, q } = req.query;
 
   const filter = {};
@@ -180,9 +180,126 @@ export const searchMenuItems = asyncHandler(async (req, res) => {
     ];
   }
 
-  const menuItems = await menuModel
-    .find(filter)
-    .sort({ isBestseller: -1, rating: -1 });
+  const menuItems = await Menu.find(filter).sort({
+    isBestseller: -1,
+    rating: -1,
+  });
+
+  res.status(200).json({
+    success: true,
+    count: menuItems.length,
+    data: menuItems,
+  });
+});
+
+/*
+|------------------------------------------------------------------
+| GET ALL MENUS
+|------------------------------------------------------------------
+*/
+
+export const getAllMenus = asyncHandler(async (req, res) => {
+  const { category, isVeg, search, page = 1, limit = 20 } = req.query;
+
+  const filter = {
+    status: "ACTIVE",
+  };
+
+  // Category filter
+  if (category) {
+    filter.category = category;
+  }
+
+  // Veg / Non-Veg filter
+  if (isVeg !== undefined) {
+    filter.isVeg = isVeg === "true";
+  }
+
+  // Search filter
+  if (search) {
+    filter.$or = [
+      {
+        name: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+      {
+        description: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+      {
+        category: {
+          $regex: search,
+          $options: "i",
+        },
+      },
+    ];
+  }
+
+  const skip = (Number(page) - 1) * Number(limit);
+
+  const menus = await Menu.find(filter)
+    .populate("restaurant", "restaurantName logo rating deliveryTime")
+    .sort({
+      isBestseller: -1,
+      rating: -1,
+      createdAt: -1,
+    })
+    .skip(skip)
+    .limit(Number(limit));
+
+  const totalMenus = await Menu.countDocuments(filter);
+
+  res.status(200).json({
+    success: true,
+    totalMenus,
+    currentPage: Number(page),
+    totalPages: Math.ceil(totalMenus / Number(limit)),
+    count: menus.length,
+    data: menus,
+  });
+});
+
+export const searchMenuItems = asyncHandler(async (req, res) => {
+  const { q } = req.query;
+
+  const filter = {
+    status: "ACTIVE",
+    isAvailable: true,
+  };
+
+  if (q) {
+    filter.$or = [
+      {
+        name: {
+          $regex: q,
+          $options: "i",
+        },
+      },
+      {
+        category: {
+          $regex: q,
+          $options: "i",
+        },
+      },
+      {
+        description: {
+          $regex: q,
+          $options: "i",
+        },
+      },
+    ];
+  }
+
+  const menuItems = await Menu.find(filter)
+    .populate("restaurant", "restaurantName")
+    .sort({
+      isBestseller: -1,
+      rating: -1,
+    });
 
   res.status(200).json({
     success: true,

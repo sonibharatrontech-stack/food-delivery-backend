@@ -23,6 +23,11 @@ export const addToCart = async (req, res) => {
         .json({ success: true, message: "Item added to cart", data: cart });
     }
 
+    // Empty cart → allow restaurant switch
+    if (cart.items.length === 0) {
+      cart.restaurant = restaurantId;
+    }
+
     // CASE 2: DIFFERENT RESTAURANT → BLOCK
     if (cart.restaurant.toString() !== restaurantId) {
       return res.status(400).json({
@@ -69,15 +74,37 @@ export const getCart = async (req, res) => {
   try {
     const { userId } = req.params;
 
-    const cart = await Cart.findOne({ user: userId, status: "ACTIVE" });
+    const cart = await Cart.findOne({
+      user: userId,
+      status: "ACTIVE",
+    })
+      .populate({
+        path: "items.menuItem",
+        select:
+          "name image price category description isVeg isBestseller rating isAvailable",
+      })
+      .populate({
+        path: "restaurant",
+        select: "restaurantName logo",
+      });
 
     if (!cart) {
-      return res.status(404).json({ success: false, message: "Cart is empty" });
+      return res.status(404).json({
+        success: false,
+        message: "Cart is empty",
+      });
     }
 
-    return res.status(200).json({ success: true, data: cart });
+    return res.status(200).json({
+      success: true,
+      data: cart,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -110,6 +137,14 @@ export const updateCartItem = async (req, res) => {
     // IF QUANTITY 0 OR LESS → REMOVE ITEM
     if (quantity <= 0) {
       cart.items.splice(itemIndex, 1);
+      if (cart.items.length === 0) {
+        await Cart.findByIdAndDelete(cart._id);
+
+        return res.status(200).json({
+          success: true,
+          message: "Cart cleared",
+        });
+      }
     } else {
       cart.items[itemIndex].quantity = quantity;
     }
@@ -129,7 +164,6 @@ export const updateCartItem = async (req, res) => {
     return res.status(500).json({ success: false, message: error.message });
   }
 };
-
 /*
 |------------------------------------------------------------------
 | REMOVE SINGLE ITEM
@@ -148,6 +182,15 @@ export const removeCartItem = async (req, res) => {
     cart.items = cart.items.filter(
       (item) => item.menuItem.toString() !== menuItemId,
     );
+
+    if (cart.items.length === 0) {
+      await Cart.findByIdAndDelete(cart._id);
+
+      return res.status(200).json({
+        success: true,
+        message: "Cart cleared",
+      });
+    }
 
     // RECALCULATE TOTALS
     cart.subtotal = cart.items.reduce(

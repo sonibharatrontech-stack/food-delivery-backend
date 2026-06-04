@@ -1,4 +1,6 @@
 import Order from "../models/order.model.js";
+import { calculateDistance } from "../utils/calculateDistance.js";
+import { calculateETA } from "../utils/calculateETA.js";
 
 /*
 |------------------------------------------------------------------
@@ -270,5 +272,157 @@ export const cancelOrder = async (req, res) => {
       success: false,
       message: error.message,
     });
+  }
+};
+
+/*
+|------------------------------------------------------------------
+| GET LIVE TRACKING
+|------------------------------------------------------------------
+*/
+
+export const getLiveTracking = async (req, res) => {
+  try {
+
+    const { orderId } = req.params;
+
+    /*
+    |------------------------------------------------------------------
+    | FIND ORDER
+    |------------------------------------------------------------------
+    */
+
+    const order = await Order.findById(orderId)
+      .populate({
+        path: "deliveryPartner",
+        select: `
+          partnerId
+          vehicleType
+          vehicleNumber
+          currentLocation
+          isOnline
+        `,
+      })
+      .populate({
+        path: "restaurant",
+        select: `
+          restaurantName
+        `,
+      });
+
+    /*
+    |------------------------------------------------------------------
+    | CHECK ORDER
+    |------------------------------------------------------------------
+    */
+
+    if (!order) {
+      return res.status(404).json({
+        success: false,
+        message: "Order not found",
+      });
+    }
+
+    /*
+    |------------------------------------------------------------------
+    | DISTANCE & ETA CALCULATION
+    |------------------------------------------------------------------
+    */
+
+    let distanceFromCustomer = null;
+
+    let eta = null;
+
+    if (
+      order.deliveryPartner &&
+      order.deliveryPartner.currentLocation &&
+      order.deliveryAddress?.location
+    ) {
+
+      const [
+        partnerLng,
+        partnerLat,
+      ] =
+        order.deliveryPartner.currentLocation.coordinates;
+
+      const {
+        lat: customerLat,
+        lng: customerLng,
+      } =
+        order.deliveryAddress.location;
+
+      distanceFromCustomer =
+        calculateDistance(
+          partnerLat,
+          partnerLng,
+          customerLat,
+          customerLng
+        );
+
+      eta =
+        calculateETA(
+          distanceFromCustomer
+        );
+    }
+
+    /*
+    |------------------------------------------------------------------
+    | RESPONSE
+    |------------------------------------------------------------------
+    */
+
+    return res.status(200).json({
+      success: true,
+
+      data: {
+
+        orderId: order._id,
+
+        orderStatus: order.orderStatus,
+
+        assignedAt: order.assignedAt,
+
+        pickedUpAt: order.pickedUpAt,
+
+        deliveredAt: order.deliveredAt,
+
+        estimatedDeliveryTime:
+          order.estimatedDeliveryTime,
+
+        liveLocation: order.liveLocation,
+
+        distanceFromCustomer,
+
+        eta,
+
+        deliveryPartner: order.deliveryPartner,
+
+        restaurant: order.restaurant,
+
+        deliveryAddress: order.deliveryAddress,
+
+        items: order.items,
+
+        subtotal: order.subtotal,
+
+        deliveryFee: order.deliveryFee,
+
+        taxes: order.taxes,
+
+        discount: order.discount,
+
+        totalAmount: order.totalAmount,
+
+        statusTimeline: order.statusTimeline,
+      },
+    });
+
+  } catch (error) {
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+
   }
 };
