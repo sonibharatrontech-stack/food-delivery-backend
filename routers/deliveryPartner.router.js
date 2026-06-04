@@ -16,6 +16,11 @@ import {
   goOffline,
   getAvailableOrders,
   acceptOrder,
+  pickupOrder,
+  outForDelivery,
+  deliverOrder,
+  autoAssignDeliveryPartner,
+  resetTestOrder,
 } from "../controllers/deliveryPartner.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -99,6 +104,72 @@ router.patch(
   authMiddleware,
   roleMiddleware(Roles.DELIVERY_PARTNER),
   acceptOrder,
+);
+
+/*
+|------------------------------------------------------------------
+| PICKUP ORDER
+|------------------------------------------------------------------
+*/
+
+router.patch(
+  "/pickup-order/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.DELIVERY_PARTNER),
+  pickupOrder,
+);
+
+/*
+|------------------------------------------------------------------
+| OUT FOR DELIVERY
+|------------------------------------------------------------------
+*/
+
+router.patch(
+  "/out-for-delivery/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.DELIVERY_PARTNER),
+  outForDelivery,
+);
+
+/*
+
+/*
+|------------------------------------------------------------------
+| DELIVER ORDER
+|------------------------------------------------------------------
+*/
+
+router.patch(
+  "/deliver-order/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.DELIVERY_PARTNER),
+  deliverOrder,
+);
+
+/*
+|------------------------------------------------------------------
+| Auto assign delivery partner
+|------------------------------------------------------------------
+*/
+router.patch(
+  "/auto-assign/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.DELIVERY_PARTNER),
+  autoAssignDeliveryPartner,
+);
+
+/*
+|------------------------------------------------------------------
+| RESET TEST ORDER
+|------------------------------------------------------------------
+*/
+
+router.patch(
+  "/reset-order/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.DELIVERY_PARTNER),
+  resetTestOrder,
 );
 
 // ======================================================
