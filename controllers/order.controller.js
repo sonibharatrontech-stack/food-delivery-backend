@@ -1,5 +1,7 @@
 import Order from "../models/order.model.js";
+import Restaurant from "../models/restaurant.model.js";
 import { calculateDistance } from "../utils/calculateDistance.js";
+
 import { calculateETA } from "../utils/calculateETA.js";
 
 /*
@@ -10,15 +12,28 @@ import { calculateETA } from "../utils/calculateETA.js";
 
 export const placeOrder = async (req, res) => {
   try {
-    const order = await Order.create(req.body);
+    const restaurant = await Restaurant.findById(req.body.restaurant);
 
-    res.status(201).json({
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found",
+      });
+    }
+
+    const order = await Order.create({
+      ...req.body,
+
+      restaurantLocation: restaurant.location.coordinates,
+    });
+
+    return res.status(201).json({
       success: true,
       message: "Order placed successfully",
       data: order,
     });
   } catch (error) {
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: error.message,
     });
@@ -108,7 +123,6 @@ export const getAllOrders = async (req, res) => {
     });
   }
 };
-
 /*
 |------------------------------------------------------------------
 | UPDATE ORDER STATUS
@@ -134,10 +148,51 @@ export const updateOrderStatus = async (req, res) => {
       });
     }
 
-    // UPDATE STATUS
+    /*
+    |------------------------------------------------------------------
+    | VALID ORDER STATUSES
+    |------------------------------------------------------------------
+    */
+
+    const validStatuses = [
+      "PLACED",
+      "CONFIRMED",
+      "PREPARING",
+      "READY_FOR_PICKUP",
+      "PICKED_UP",
+      "OUT_FOR_DELIVERY",
+      "DELIVERED",
+      "CANCELLED",
+    ];
+
+    // INVALID STATUS
+    if (!validStatuses.includes(orderStatus)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid order status",
+      });
+    }
+
+    /*
+    |------------------------------------------------------------------
+    | UPDATE ORDER STATUS
+    |------------------------------------------------------------------
+    */
+
     order.orderStatus = orderStatus;
 
-    // SAVE
+    /*
+    |------------------------------------------------------------------
+    | ADD STATUS TIMELINE ENTRY
+    |------------------------------------------------------------------
+    */
+
+    order.statusTimeline.push({
+      status: orderStatus,
+      changedAt: new Date(),
+    });
+
+    // SAVE ORDER
     await order.save();
 
     return res.status(200).json({
@@ -152,7 +207,6 @@ export const updateOrderStatus = async (req, res) => {
     });
   }
 };
-
 /*
 |------------------------------------------------------------------
 | GET ORDERS BY CUSTOMER
@@ -283,7 +337,6 @@ export const cancelOrder = async (req, res) => {
 
 export const getLiveTracking = async (req, res) => {
   try {
-
     const { orderId } = req.params;
 
     /*
@@ -338,31 +391,20 @@ export const getLiveTracking = async (req, res) => {
       order.deliveryPartner.currentLocation &&
       order.deliveryAddress?.location
     ) {
-
-      const [
-        partnerLng,
-        partnerLat,
-      ] =
+      const [partnerLng, partnerLat] =
         order.deliveryPartner.currentLocation.coordinates;
 
-      const {
-        lat: customerLat,
-        lng: customerLng,
-      } =
+      const { lat: customerLat, lng: customerLng } =
         order.deliveryAddress.location;
 
-      distanceFromCustomer =
-        calculateDistance(
-          partnerLat,
-          partnerLng,
-          customerLat,
-          customerLng
-        );
+      distanceFromCustomer = calculateDistance(
+        partnerLat,
+        partnerLng,
+        customerLat,
+        customerLng,
+      );
 
-      eta =
-        calculateETA(
-          distanceFromCustomer
-        );
+      eta = calculateETA(distanceFromCustomer);
     }
 
     /*
@@ -375,7 +417,6 @@ export const getLiveTracking = async (req, res) => {
       success: true,
 
       data: {
-
         orderId: order._id,
 
         orderStatus: order.orderStatus,
@@ -386,8 +427,7 @@ export const getLiveTracking = async (req, res) => {
 
         deliveredAt: order.deliveredAt,
 
-        estimatedDeliveryTime:
-          order.estimatedDeliveryTime,
+        estimatedDeliveryTime: order.estimatedDeliveryTime,
 
         liveLocation: order.liveLocation,
 
@@ -416,13 +456,10 @@ export const getLiveTracking = async (req, res) => {
         statusTimeline: order.statusTimeline,
       },
     });
-
   } catch (error) {
-
     return res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };

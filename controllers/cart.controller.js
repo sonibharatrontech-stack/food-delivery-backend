@@ -85,7 +85,8 @@ export const getCart = async (req, res) => {
       })
       .populate({
         path: "restaurant",
-        select: "restaurantName logo",
+        select:
+          "restaurantName logo paymentMethods deliveryFee minimumOrderAmount",
       });
 
     if (!cart) {
@@ -100,7 +101,6 @@ export const getCart = async (req, res) => {
       data: cart,
     });
   } catch (error) {
-
     return res.status(500).json({
       success: false,
       message: error.message,

@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 import RestaurantStatus from "../enums/RestaurantStatus.enum.js";
 import RestaurantType from "../enums/RestaurantType.enum.js";
+import RestaurantPaymentMethod from "../enums/PaymentMethod.enum.js";
 const restaurantSchema = new mongoose.Schema(
   {
     partner: {
@@ -111,16 +112,26 @@ const restaurantSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-
-    acceptsOnlinePayment: {
+    isFavourite: {
       type: Boolean,
-      default: true,
+      default: false,
     },
 
-    acceptsCashOnDelivery: {
-      type: Boolean,
-      default: true,
+    paymentMethods: {
+      type: [String],
+      enum: Object.values(RestaurantPaymentMethod),
+      default: ["UPI", "COD"],
     },
+
+    // acceptsOnlinePayment: {
+    //   type: Boolean,
+    //   default: true,
+    // },
+
+    // acceptsCashOnDelivery: {
+    //   type: Boolean,
+    //   default: true,
+    // },
 
     // RATINGS
     rating: {

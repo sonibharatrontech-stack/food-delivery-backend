@@ -7,9 +7,10 @@ import RestaurantPartner from "../models/restaurantPartner.model.js";
 
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
+import Order from "../models/order.model.js";
 
 // ======================================================
-// CREATE RESTAURANT
+// CREATE RESTAURANT by Resturant Partner
 // ======================================================
 
 export const createRestaurant = asyncHandler(async (req, res) => {
@@ -36,14 +37,19 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     coverImage,
     images,
     address,
+
     isVeg,
     restaurantType,
+    paymentMethods,
+
     coordinates,
+
     deliveryTime,
     deliveryRadius,
     deliveryFee,
     minimumOrderAmount,
     averageCostForTwo,
+
     openingHours,
   } = req.body;
 
@@ -91,16 +97,24 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     restaurantName,
     slug,
     description,
+
     cuisines,
     tags,
+
     phone,
     email,
+
     logo,
     coverImage,
     images,
+
     address,
+
     isVeg,
     restaurantType,
+
+    paymentMethods,
+
     location: {
       type: "Point",
       coordinates,
@@ -111,6 +125,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
     deliveryFee,
     minimumOrderAmount,
     averageCostForTwo,
+
     openingHours,
   });
 
@@ -127,7 +142,7 @@ export const createRestaurant = asyncHandler(async (req, res) => {
 });
 
 // ======================================================
-// GET MY RESTAURANTS
+// GET MY RESTAURANTS  by Resturant Partner
 // ======================================================
 
 export const getMyRestaurants = asyncHandler(async (req, res) => {
@@ -155,7 +170,161 @@ export const getMyRestaurants = asyncHandler(async (req, res) => {
 });
 
 // ======================================================
-// GET SINGLE RESTAURANT
+// UPDATE RESTAURANT  by Resturant Partner
+// ======================================================
+
+export const updateRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
+
+  const partner = await RestaurantPartner.findOne({
+    user: req.user.id,
+  });
+
+  if (!partner) {
+    throw new ApiError(404, "Partner not found");
+  }
+
+  const restaurant = await Restaurant.findOne({
+    _id: restaurantId,
+    partner: partner._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  Object.assign(restaurant, req.body);
+
+  // UPDATE LOCATION
+  if (req.body.coordinates) {
+    restaurant.location = {
+      type: "Point",
+      coordinates: req.body.coordinates,
+    };
+  }
+
+  // UPDATE SLUG
+  if (req.body.restaurantName) {
+    restaurant.slug = slugify(req.body.restaurantName, {
+      lower: true,
+      strict: true,
+    });
+  }
+
+  await restaurant.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Restaurant updated successfully",
+    data: restaurant,
+  });
+});
+
+// ======================================================
+// DELETE RESTAURANT  by Resturant Partner
+// ======================================================
+
+export const deleteRestaurant = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
+
+  const partner = await RestaurantPartner.findOne({
+    user: req.user.id,
+  });
+
+  if (!partner) {
+    throw new ApiError(404, "Partner not found");
+  }
+
+  const restaurant = await Restaurant.findOneAndDelete({
+    _id: restaurantId,
+    partner: partner._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  // UPDATE COUNT
+  partner.totalRestaurants -= 1;
+
+  await partner.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Restaurant deleted successfully",
+  });
+});
+
+// ===================================================
+// Delivery Setting Update   by Resturant Partner
+// ==================================================
+export const updateDeliverySettings = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
+
+  const { deliveryTime, deliveryRadius, deliveryFee, minimumOrderAmount } =
+    req.body;
+
+  const restaurant = await Restaurant.findById(restaurantId);
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  restaurant.deliveryTime = deliveryTime ?? restaurant.deliveryTime;
+
+  restaurant.deliveryRadius = deliveryRadius ?? restaurant.deliveryRadius;
+
+  restaurant.deliveryFee = deliveryFee ?? restaurant.deliveryFee;
+
+  restaurant.minimumOrderAmount =
+    minimumOrderAmount ?? restaurant.minimumOrderAmount;
+
+  await restaurant.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Delivery settings updated",
+  });
+});
+
+// ======================================================
+// TOGGLE OPEN/CLOSE  by Resturant Partner
+// ======================================================
+
+export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
+
+  const partner = await RestaurantPartner.findOne({
+    user: req.user.id,
+  });
+
+  if (!partner) {
+    throw new ApiError(404, "Partner not found");
+  }
+
+  const restaurant = await Restaurant.findOne({
+    _id: restaurantId,
+    partner: partner._id,
+  });
+
+  if (!restaurant) {
+    throw new ApiError(404, "Restaurant not found");
+  }
+
+  restaurant.isOpen = !restaurant.isOpen;
+
+  await restaurant.save();
+
+  return res.status(200).json({
+    success: true,
+    message: restaurant.isOpen ? "Restaurant opened" : "Restaurant closed",
+
+    isOpen: restaurant.isOpen,
+  });
+});
+
+// ======================================================
+// GET SINGLE RESTAURANT by Customer
 // ======================================================
 
 export const getRestaurantById = asyncHandler(async (req, res) => {
@@ -177,7 +346,7 @@ export const getRestaurantById = asyncHandler(async (req, res) => {
 });
 
 // ======================================================
-// GET ALL RESTAURANTS
+// GET ALL RESTAURANTS by Customer
 // ======================================================
 
 export const getAllRestaurants = asyncHandler(async (req, res) => {
@@ -190,6 +359,10 @@ export const getAllRestaurants = asyncHandler(async (req, res) => {
     isFeatured,
     isOpen,
     restaurantType,
+    paymentMethod,
+    minRating,
+    maxCost,
+    minCost,
     isVeg,
     sortBy,
     order,
@@ -226,6 +399,27 @@ export const getAllRestaurants = asyncHandler(async (req, res) => {
 
   if (restaurantType?.trim()) {
     filter.restaurantType = restaurantType;
+  }
+
+  if (paymentMethod) {
+    filter.paymentMethods = paymentMethod;
+  }
+  if (minRating) {
+    filter.rating = {
+      $gte: Number(minRating),
+    };
+  }
+
+  if (minCost || maxCost) {
+    filter.averageCostForTwo = {};
+
+    if (minCost) {
+      filter.averageCostForTwo.$gte = Number(minCost);
+    }
+
+    if (maxCost) {
+      filter.averageCostForTwo.$lte = Number(maxCost);
+    }
   }
 
   // FEATURED FILTER
@@ -303,133 +497,53 @@ export const getAllRestaurants = asyncHandler(async (req, res) => {
 });
 
 // ======================================================
-// UPDATE RESTAURANT
+// TOGGLE Favourite by Customer
 // ======================================================
-
-export const updateRestaurant = asyncHandler(async (req, res) => {
+export const toggleFavouriteRestaurant = asyncHandler(async (req, res) => {
   const { restaurantId } = req.params;
 
-  const partner = await RestaurantPartner.findOne({
-    user: req.user.id,
-  });
-
-  if (!partner) {
-    throw new ApiError(404, "Partner not found");
-  }
-
-  const restaurant = await Restaurant.findOne({
-    _id: restaurantId,
-    partner: partner._id,
-  });
+  const restaurant = await Restaurant.findById(restaurantId);
 
   if (!restaurant) {
     throw new ApiError(404, "Restaurant not found");
   }
 
-  Object.assign(restaurant, req.body);
-
-  // UPDATE LOCATION
-  if (req.body.coordinates) {
-    restaurant.location = {
-      type: "Point",
-      coordinates: req.body.coordinates,
-    };
-  }
-
-  // UPDATE SLUG
-  if (req.body.restaurantName) {
-    restaurant.slug = slugify(req.body.restaurantName, {
-      lower: true,
-      strict: true,
-    });
-  }
+  restaurant.isFavourite = !restaurant.isFavourite;
 
   await restaurant.save();
 
   return res.status(200).json({
     success: true,
-    message: "Restaurant updated successfully",
-    data: restaurant,
+    isFavourite: restaurant.isFavourite,
   });
 });
 
-// ======================================================
-// DELETE RESTAURANT
-// ======================================================
-
-export const deleteRestaurant = asyncHandler(async (req, res) => {
-  const { restaurantId } = req.params;
-
-  const partner = await RestaurantPartner.findOne({
-    user: req.user.id,
-  });
-
-  if (!partner) {
-    throw new ApiError(404, "Partner not found");
-  }
-
-  const restaurant = await Restaurant.findOneAndDelete({
-    _id: restaurantId,
-    partner: partner._id,
-  });
-
-  if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found");
-  }
-
-  // UPDATE COUNT
-  partner.totalRestaurants -= 1;
-
-  await partner.save();
+// ====================================================
+// Get Top Rated by Customer
+// ====================================================
+export const getTopRatedRestaurants = asyncHandler(async (req, res) => {
+  const restaurants = await Restaurant.find({
+    status: "ACTIVE",
+  })
+    .sort({
+      rating: -1,
+    })
+    .limit(20)
+    .lean();
 
   return res.status(200).json({
     success: true,
-    message: "Restaurant deleted successfully",
+    restaurants,
   });
 });
 
 // ======================================================
-// TOGGLE OPEN/CLOSE
-// ======================================================
-
-export const toggleRestaurantOpenStatus = asyncHandler(async (req, res) => {
-  const { restaurantId } = req.params;
-
-  const partner = await RestaurantPartner.findOne({
-    user: req.user.id,
-  });
-
-  if (!partner) {
-    throw new ApiError(404, "Partner not found");
-  }
-
-  const restaurant = await Restaurant.findOne({
-    _id: restaurantId,
-    partner: partner._id,
-  });
-
-  if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found");
-  }
-
-  restaurant.isOpen = !restaurant.isOpen;
-
-  await restaurant.save();
-
-  return res.status(200).json({
-    success: true,
-    message: restaurant.isOpen ? "Restaurant opened" : "Restaurant closed",
-
-    isOpen: restaurant.isOpen,
-  });
-});
-
-// ======================================================
-// GET NEARBY RESTAURANTS
+// GET NEARBY RESTAURANTS by Customer
 // ======================================================
 
 export const getNearbyRestaurants = asyncHandler(async (req, res) => {
-  const { lng, lat, isVeg, restaurantType } = req.query;
+  const { lng, lat, isVeg, restaurantType, minRating, paymentMethod } =
+    req.query;
 
   if (!lng || !lat) {
     throw new ApiError(400, "Latitude and Longitude required");
@@ -458,6 +572,15 @@ export const getNearbyRestaurants = asyncHandler(async (req, res) => {
   if (restaurantType?.trim()) {
     filter.restaurantType = restaurantType;
   }
+  if (paymentMethod) {
+    filter.paymentMethods = paymentMethod;
+  }
+
+  if (minRating) {
+    filter.rating = {
+      $gte: Number(minRating),
+    };
+  }
   const restaurants = await Restaurant.find(filter).lean();
 
   return res.status(200).json({
@@ -468,7 +591,7 @@ export const getNearbyRestaurants = asyncHandler(async (req, res) => {
 });
 
 // ======================================================
-// GET FEATURED RESTAURANTS
+// GET FEATURED RESTAURANTS by Customer
 // ======================================================
 
 export const getFeaturedRestaurants = asyncHandler(async (req, res) => {
@@ -488,6 +611,102 @@ export const getFeaturedRestaurants = asyncHandler(async (req, res) => {
   return res.status(200).json({
     success: true,
     data: restaurants,
+  });
+});
+
+// ====================================================
+// search restuarnt  by Customer
+// =====================================================
+export const searchRestaurants = asyncHandler(async (req, res) => {
+  const { keyword } = req.query;
+
+  const restaurants = await Restaurant.find({
+    $text: {
+      $search: keyword,
+    },
+  })
+    .limit(20)
+    .lean();
+
+  return res.status(200).json({
+    success: true,
+    restaurants,
+  });
+});
+
+// ===========================Orders==============================
+
+// controllers/order.controller.js
+
+export const confirmOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  order.orderStatus = "CONFIRMED";
+
+  order.statusTimeline.push({
+    status: "CONFIRMED",
+    timestamp: new Date(),
+  });
+
+  await order.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Order confirmed",
+  });
+});
+
+export const startPreparingOrder = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  order.orderStatus = "PREPARING";
+
+  order.statusTimeline.push({
+    status: "PREPARING",
+    timestamp: new Date(),
+  });
+
+  await order.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Food preparation started",
+  });
+});
+
+export const markOrderReady = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new ApiError(404, "Order not found");
+  }
+
+  order.orderStatus = "READY_FOR_PICKUP";
+
+  order.statusTimeline.push({
+    status: "READY_FOR_PICKUP",
+    timestamp: new Date(),
+  });
+
+  await order.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Order ready for pickup",
   });
 });
 
@@ -540,5 +759,35 @@ export const featureRestaurant = asyncHandler(async (req, res) => {
       : "Restaurant unfeatured",
 
     isFeatured: restaurant.isFeatured,
+  });
+});
+
+// ======================================================
+// ADMIN - GET RESTAURANTSTATS
+// ======================================================
+export const getRestaurantStats = asyncHandler(async (req, res) => {
+  const totalRestaurants = await Restaurant.countDocuments();
+
+  const activeRestaurants = await Restaurant.countDocuments({
+    status: "ACTIVE",
+  });
+
+  const featuredRestaurants = await Restaurant.countDocuments({
+    isFeatured: true,
+  });
+
+  const openRestaurants = await Restaurant.countDocuments({
+    isOpen: true,
+  });
+
+  return res.status(200).json({
+    success: true,
+
+    stats: {
+      totalRestaurants,
+      activeRestaurants,
+      featuredRestaurants,
+      openRestaurants,
+    },
   });
 });

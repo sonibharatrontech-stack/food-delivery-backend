@@ -416,3 +416,5 @@ export const deletePartner = asyncHandler(async (req, res) => {
     message: "Restaurant partner deleted successfully",
   });
 });
+
+

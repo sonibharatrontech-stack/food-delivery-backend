@@ -1,5 +1,9 @@
 import mongoose from "mongoose";
 
+import PaymentMethod from "../enums/PaymentMethod.enum.js";
+import PaymentStatus from "../enums/PaymentStatus.enum.js";
+import OrderStatus from "../enums/OrderStatus.enum.js";
+
 /*
 |------------------------------------------------------------------
 | ORDER ITEM SCHEMA
@@ -81,6 +85,50 @@ const deliveryAddressSchema = new mongoose.Schema(
 
 /*
 |------------------------------------------------------------------
+| STATUS TIMELINE SCHEMA
+|------------------------------------------------------------------
+*/
+
+const statusTimelineSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+    },
+
+    changedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+/*
+|------------------------------------------------------------------
+| LIVE LOCATION SCHEMA
+|------------------------------------------------------------------
+*/
+
+const liveLocationSchema = new mongoose.Schema(
+  {
+    lat: Number,
+
+    lng: Number,
+
+    updatedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
+/*
+|------------------------------------------------------------------
 | ORDER SCHEMA
 |------------------------------------------------------------------
 */
@@ -98,44 +146,159 @@ const orderSchema = new mongoose.Schema(
       ref: "Restaurant",
       required: true,
     },
-    // DELIVERY PARTNER
+
+    restaurantLocation: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+
+      coordinates: {
+        type: [Number],
+        default: [0, 0],
+      },
+    },
+
     deliveryPartner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "DeliveryPartner",
       default: null,
     },
 
+    /*
+    |------------------------------------------------------------------
+    | DELIVERY TIMESTAMPS
+    |------------------------------------------------------------------
+    */
+
+    assignedAt: {
+      type: Date,
+      default: null,
+    },
+
+    pickedUpAt: {
+      type: Date,
+      default: null,
+    },
+
+    deliveredAt: {
+      type: Date,
+      default: null,
+    },
+
+    /*
+    |------------------------------------------------------------------
+    | ORDER ITEMS
+    |------------------------------------------------------------------
+    */
+
     items: [orderItemSchema],
+
+    /*
+    |------------------------------------------------------------------
+    | DELIVERY ADDRESS
+    |------------------------------------------------------------------
+    */
 
     deliveryAddress: deliveryAddressSchema,
 
+    /*
+    |------------------------------------------------------------------
+    | PAYMENT DETAILS
+    |------------------------------------------------------------------
+    */
+
     paymentMethod: {
       type: String,
-      enum: ["COD", "ONLINE"],
+
+      enum: ["COD", "UPI", "CARD", "NET_BANKING", "WALLET"],
+
       default: "COD",
     },
 
     paymentStatus: {
       type: String,
+
       enum: ["PENDING", "PAID", "FAILED", "REFUNDED"],
+
       default: "PENDING",
     },
 
+    paymentGateway: {
+      type: String,
+
+      enum: ["RAZORPAY", "STRIPE", "PAYPAL", null],
+
+      default: null,
+    },
+
+    paymentId: {
+      type: String,
+      default: null,
+    },
+
+    gatewayOrderId: {
+      type: String,
+      default: null,
+    },
+
+    gatewayPaymentId: {
+      type: String,
+      default: null,
+    },
+
+    paymentFailureReason: {
+      type: String,
+      default: null,
+    },
+
+    paidAt: {
+      type: Date,
+      default: null,
+    },
+
+    refundAt: {
+      type: Date,
+      default: null,
+    },
+
+    /*
+    |------------------------------------------------------------------
+    | ORDER STATUS
+    |------------------------------------------------------------------
+    */
+
     orderStatus: {
       type: String,
-      enum: [
-        "PLACED",
-        "CONFIRMED",
-        "PREPARING",
-        "READY_FOR_PICKUP", // Food ready for delivery partner
-        "ASSIGNED", // Delivery partner assigned
-        "PICKED_UP",
-        "OUT_FOR_DELIVERY",
-        "DELIVERED",
-        "CANCELLED",
-      ],
-      default: "PLACED",
+      enum: Object.values(OrderStatus),
+      default: OrderStatus.PLACED,
     },
+
+    /*
+    |------------------------------------------------------------------
+    | STATUS TIMELINE
+    |------------------------------------------------------------------
+    */
+
+    statusTimeline: [statusTimelineSchema],
+
+    /*
+    |------------------------------------------------------------------
+    | LIVE TRACKING
+    |------------------------------------------------------------------
+    */
+
+    liveLocation: {
+      type: liveLocationSchema,
+      default: null,
+    },
+
+    /*
+    |------------------------------------------------------------------
+    | BILLING
+    |------------------------------------------------------------------
+    */
 
     subtotal: {
       type: Number,
@@ -171,6 +334,16 @@ const orderSchema = new mongoose.Schema(
     timestamps: true,
   },
 );
+
+/*
+|------------------------------------------------------------------
+| GEO INDEX
+|------------------------------------------------------------------
+*/
+
+orderSchema.index({
+  restaurantLocation: "2dsphere",
+});
 
 const Order = mongoose.model("Order", orderSchema);
 
