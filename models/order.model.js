@@ -211,16 +211,17 @@ const orderSchema = new mongoose.Schema(
 
     paymentMethod: {
       type: String,
+      enum: Object.values(PaymentMethod),
 
-      enum: ["COD", "UPI", "CARD", "NET_BANKING", "WALLET"],
+      // enum: ["COD", "UPI", "CARD", "NET_BANKING", "WALLET"],
 
       default: "COD",
     },
 
     paymentStatus: {
       type: String,
-
-      enum: ["PENDING", "PAID", "FAILED", "REFUNDED"],
+      enum: Object.values(PaymentStatus),
+      // enum: ["PENDING", "PAID", "FAILED", "REFUNDED"],
 
       default: "PENDING",
     },

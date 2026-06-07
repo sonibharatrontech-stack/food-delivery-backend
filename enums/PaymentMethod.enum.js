@@ -3,7 +3,7 @@ const PaymentMethod = {
   UPI: "UPI",
   CARD: "CARD",
   WALLET: "WALLET",
-  NET_BANKING: "NET_BANKING",
+  NETBANKING: "NETBANKING",
 };
 
 export default PaymentMethod;

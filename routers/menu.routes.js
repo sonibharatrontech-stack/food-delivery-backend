@@ -8,7 +8,7 @@ import {
   deleteMenuItem,
   searchMenuItems,
   getAllMenus,
-  searchMenuItemsbyRestuarnt,
+  searchRestaurantMenuItems,
 } from "../controllers/menu.controller.js";
 
 const router = express.Router();
@@ -53,9 +53,13 @@ router.put("/update-menuitem/:id", updateMenuItem);
 
 router.delete("/delete-menuitem/:id", deleteMenuItem);
 // ==========search menu items by name========
-router.get("/menu-search", searchMenuItemsbyRestuarnt);
+// Restaurant Specific Search
+router.get(
+  "/restaurants/:restaurantId/menus/search",
+  searchRestaurantMenuItems,
+);
 
-router.get("/all", getAllMenus);
-router.get("/search", searchMenuItems);
+router.get("/menus", getAllMenus);
+router.get("/menus/search", searchMenuItems);
 
 export default router;

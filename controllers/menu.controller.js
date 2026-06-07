@@ -148,42 +148,25 @@ export const deleteMenuItem = asyncHandler(async (req, res) => {
 });
 
 // ========search manu item by name========
-export const searchMenuItemsbyRestuarnt = asyncHandler(async (req, res) => {
-  const { restaurantId, q } = req.query;
+export const searchRestaurantMenuItems = asyncHandler(async (req, res) => {
+  const { restaurantId } = req.params;
+  const { q } = req.query;
 
-  const filter = {};
-
-  if (restaurantId) {
-    filter.restaurant = restaurantId;
-  }
+  const filter = {
+    restaurant: restaurantId,
+    status: "ACTIVE",
+    isAvailable: true,
+  };
 
   if (q) {
     filter.$or = [
-      {
-        name: {
-          $regex: q,
-          $options: "i",
-        },
-      },
-      {
-        description: {
-          $regex: q,
-          $options: "i",
-        },
-      },
-      {
-        category: {
-          $regex: q,
-          $options: "i",
-        },
-      },
+      { name: { $regex: q, $options: "i" } },
+      { description: { $regex: q, $options: "i" } },
+      { category: { $regex: q, $options: "i" } },
     ];
   }
 
-  const menuItems = await Menu.find(filter).sort({
-    isBestseller: -1,
-    rating: -1,
-  });
+  const menuItems = await Menu.find(filter);
 
   res.status(200).json({
     success: true,

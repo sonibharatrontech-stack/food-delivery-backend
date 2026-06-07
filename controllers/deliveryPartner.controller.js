@@ -9,6 +9,7 @@ import { canTransition } from "../utils/orderStateMachine.js";
 
 import { updateOrderStatus } from "../services/orderStatus.service.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import ApiError from "../utils/ApiError.js";
 /*
 |------------------------------------------------------------------
 | APPLY DELIVERY PARTNER
@@ -431,7 +432,12 @@ export const autoAssignDeliveryPartner = async (req, res) => {
     | UPDATE ORDER USING SERVICE
     |------------------------------------------------------------------
     */
-
+    if (!nearestPartner) {
+      return res.status(404).json({
+        success: false,
+        message: "No delivery partner available nearby",
+      });
+    }
     const updatedOrder = await updateOrderStatus({
       orderId: order._id,
 

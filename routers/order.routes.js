@@ -75,6 +75,6 @@ router.get("/get-orders-byrestaurant/:restaurantId", getOrdersByRestaurant);
 */
 router.patch("/cancel-order/:id", cancelOrder);
 
-router.get("/:orderId/live-tracking", getLiveTracking);
+router.get("/live-tracking/:orderId", getLiveTracking);
 
 export default router;

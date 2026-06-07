@@ -349,17 +349,28 @@ export const getLiveTracking = async (req, res) => {
       .populate({
         path: "deliveryPartner",
         select: `
-          partnerId
-          vehicleType
-          vehicleNumber
-          currentLocation
-          isOnline
-        `,
+    partnerId
+    vehicleType
+    vehicleNumber
+    currentLocation
+    isOnline
+    profilePhoto
+    rating
+    totalDeliveries
+  `,
+        populate: {
+          path: "user",
+          select: `
+      name
+      phone
+    `,
+        },
       })
       .populate({
         path: "restaurant",
         select: `
           restaurantName
+          location
         `,
       });
 

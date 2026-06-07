@@ -12,6 +12,13 @@ import {
   blockRestaurant,
   featureRestaurant,
   getAllRestaurants,
+  getRestaurantStats,
+  searchRestaurants,
+  getTopRatedRestaurants,
+  toggleFavouriteRestaurant,
+  confirmOrder,
+  startPreparingOrder,
+  markOrderReady,
 } from "../controllers/restaurant.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -42,6 +49,8 @@ router.get("/restaurant/:restaurantId", getRestaurantById);
 
 // GET ALL RESTAURANTS
 router.get("/get-restaurants", getAllRestaurants);
+router.get("/search-restaurants", searchRestaurants);
+router.get("/top-rated-restaurants", getTopRatedRestaurants);
 
 // ======================================================
 // RESTAURANT PARTNER ROUTES
@@ -89,6 +98,35 @@ router.patch(
   toggleRestaurantOpenStatus,
 );
 
+router.patch(
+  "/favourite-status/:restaurantId",
+  authMiddleware,
+  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
+  toggleFavouriteRestaurant,
+);
+
+// ===========ORDER==============
+router.patch(
+  "/confirm/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
+  confirmOrder,
+);
+
+router.patch(
+  "/preparing/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
+  startPreparingOrder,
+);
+
+router.patch(
+  "/ready/:orderId",
+  authMiddleware,
+  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
+  markOrderReady,
+);
+
 // ======================================================
 // ADMIN ROUTES
 // ======================================================
@@ -107,6 +145,14 @@ router.patch(
   authMiddleware,
   roleMiddleware(Roles.ADMIN, Roles.MASTER),
   featureRestaurant,
+);
+
+// CHANGE STATUS
+router.get(
+  "/restaurants-status",
+  authMiddleware,
+  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
+  getRestaurantStats,
 );
 
 export default router;
