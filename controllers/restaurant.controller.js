@@ -8,6 +8,7 @@ import RestaurantPartner from "../models/restaurantPartner.model.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import Order from "../models/order.model.js";
+import User from "../models/user.model.js";
 
 // ======================================================
 // CREATE RESTAURANT by Resturant Partner
@@ -499,24 +500,50 @@ export const getAllRestaurants = asyncHandler(async (req, res) => {
 // ======================================================
 // TOGGLE Favourite by Customer
 // ======================================================
-export const toggleFavouriteRestaurant = asyncHandler(async (req, res) => {
+// export const toggleFavouriteRestaurant = asyncHandler(async (req, res) => {
+//   const { restaurantId } = req.params;
+
+//   const restaurant = await Restaurant.findById(restaurantId);
+
+//   if (!restaurant) {
+//     throw new ApiError(404, "Restaurant not found");
+//   }
+
+//   restaurant.isFavourite = !restaurant.isFavourite;
+
+//   await restaurant.save();
+
+//   return res.status(200).json({
+//     success: true,
+//     isFavourite: restaurant.isFavourite,
+//   });
+// });
+
+export const toggleFavouriteRestaurant = async (req, res) => {
   const { restaurantId } = req.params;
 
-  const restaurant = await Restaurant.findById(restaurantId);
+  const user = await User.findById(req.user._id);
 
-  if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found");
+  const index = user.favouriteRestaurants.findIndex(
+    (id) => id.toString() === restaurantId,
+  );
+
+  let isFavourite = false;
+
+  if (index > -1) {
+    user.favouriteRestaurants.splice(index, 1);
+  } else {
+    user.favouriteRestaurants.push(restaurantId);
+    isFavourite = true;
   }
 
-  restaurant.isFavourite = !restaurant.isFavourite;
-
-  await restaurant.save();
+  await user.save();
 
   return res.status(200).json({
     success: true,
-    isFavourite: restaurant.isFavourite,
+    isFavourite,
   });
-});
+};
 
 // ====================================================
 // Get Top Rated by Customer
@@ -613,6 +640,20 @@ export const getFeaturedRestaurants = asyncHandler(async (req, res) => {
     data: restaurants,
   });
 });
+
+// ======================================================
+// GET FAVOURITE RESTAURANTS by Customer
+// ======================================================
+export const getFavouriteRestaurants = async (req, res) => {
+  const user = await User.findById(req.user._id).populate(
+    "favouriteRestaurants",
+  );
+
+  return res.status(200).json({
+    success: true,
+    restaurants: user.favouriteRestaurants,
+  });
+};
 
 // ====================================================
 // search restuarnt  by Customer

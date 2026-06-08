@@ -19,6 +19,7 @@ import {
   confirmOrder,
   startPreparingOrder,
   markOrderReady,
+  getFavouriteRestaurants,
 } from "../controllers/restaurant.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -51,7 +52,12 @@ router.get("/restaurant/:restaurantId", getRestaurantById);
 router.get("/get-restaurants", getAllRestaurants);
 router.get("/search-restaurants", searchRestaurants);
 router.get("/top-rated-restaurants", getTopRatedRestaurants);
-
+router.get(
+  "/favourites",
+  authMiddleware,
+  roleMiddleware(Roles.CUSTOMER),
+  getFavouriteRestaurants,
+);
 // ======================================================
 // RESTAURANT PARTNER ROUTES
 // ======================================================

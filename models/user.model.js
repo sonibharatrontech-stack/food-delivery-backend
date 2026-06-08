@@ -54,6 +54,12 @@ const userSchema = new mongoose.Schema(
         default: Roles.CUSTOMER,
       },
     ],
+favouriteRestaurants: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Restaurant",
+  },
+],
 
     profileImage: String,
 
