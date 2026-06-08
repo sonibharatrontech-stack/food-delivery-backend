@@ -101,7 +101,12 @@ router.patch(
 router.patch(
   "/favourite-status/:restaurantId",
   authMiddleware,
-  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
+  roleMiddleware(
+    Roles.RESTAURANT_PARTNER,
+    Roles.ADMIN,
+    Roles.MASTER,
+    Roles.CUSTOMER,
+  ),
   toggleFavouriteRestaurant,
 );
 
