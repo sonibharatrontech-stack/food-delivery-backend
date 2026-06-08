@@ -90,9 +90,14 @@ export const getCart = async (req, res) => {
       });
 
     if (!cart) {
-      return res.status(404).json({
-        success: false,
-        message: "Cart is empty",
+      return res.status(200).json({
+        success: true,
+        data: {
+          items: [],
+          restaurant: null,
+          deliveryFee: 0,
+          discount: 0,
+        },
       });
     }
 
