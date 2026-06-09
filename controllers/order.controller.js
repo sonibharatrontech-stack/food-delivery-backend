@@ -221,9 +221,15 @@ export const getOrdersByCustomer = async (req, res) => {
     // FIND ORDERS
     const orders = await Order.find({
       customer: customerId,
-    }).sort({
-      createdAt: -1,
-    });
+    })
+      .populate({
+        path: "restaurant",
+        select: "restaurantName coverImage logo",
+      })
+      .sort({
+        createdAt: -1,
+      })
+      .lean();
 
     return res.status(200).json({
       success: true,
