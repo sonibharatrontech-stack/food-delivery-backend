@@ -16,9 +16,6 @@ import {
   searchRestaurants,
   getTopRatedRestaurants,
   toggleFavouriteRestaurant,
-  confirmOrder,
-  startPreparingOrder,
-  markOrderReady,
   getFavouriteRestaurants,
 } from "../controllers/restaurant.controller.js";
 
@@ -114,28 +111,6 @@ router.patch(
     Roles.CUSTOMER,
   ),
   toggleFavouriteRestaurant,
-);
-
-// ===========ORDER==============
-router.patch(
-  "/confirm/:orderId",
-  authMiddleware,
-  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
-  confirmOrder,
-);
-
-router.patch(
-  "/preparing/:orderId",
-  authMiddleware,
-  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
-  startPreparingOrder,
-);
-
-router.patch(
-  "/ready/:orderId",
-  authMiddleware,
-  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
-  markOrderReady,
 );
 
 // ======================================================

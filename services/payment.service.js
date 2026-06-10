@@ -1,13 +1,8 @@
-import Order from "../orders/order.model.js";
+import Order from "../models/order.model.js";
 
-import {
-    createDummyPaymentSession,
-} from "./dummy.gateway.js";
+import { createDummyPaymentSession } from "./dummy.gateway.js";
 
-
-import PaymentTransaction from "./paymentTransaction.model.js";
-
-
+import PaymentTransaction from "../models/paymentTransection.model.js";
 
 /*                                                                 |
 | ------------------------------------------------------------------ |
@@ -15,83 +10,68 @@ import PaymentTransaction from "./paymentTransaction.model.js";
 | ------------------------------------------------------------------ |
 | */
 
-export const createPaymentSessionService =
-    async ({
-        orderId,
-        paymentMethod,
-    }) => {
-
-
-        /*
+export const createPaymentSessionService = async ({
+  orderId,
+  paymentMethod,
+}) => {
+  /*
         |-------------------------------------------------------------
         | FIND ORDER
         |-------------------------------------------------------------
         */
 
-        const order = await Order.findById(
-            orderId
-        );
+  const order = await Order.findById(orderId);
 
-        if (!order) {
-            throw new Error("Order not found");
-        }
+  if (!order) {
+    throw new Error("Order not found");
+  }
 
-        /*
+  /*
         |-------------------------------------------------------------
         | VALIDATE PAYMENT STATUS
         |-------------------------------------------------------------
         */
 
-        if (order.paymentStatus === "PAID") {
-            throw new Error(
-                "Order already paid"
-            );
-        }
+  if (order.paymentStatus === "PAID") {
+    throw new Error("Order already paid");
+  }
 
-        /*
+  /*
         |-------------------------------------------------------------
         | CREATE DUMMY PAYMENT SESSION
         |-------------------------------------------------------------
         */
 
+  const paymentSession = await createDummyPaymentSession({
+    orderId: order._id,
+    amount: order.totalAmount,
+    paymentMethod,
+  });
 
-        const paymentSession =
-            await createDummyPaymentSession({
-                orderId: order._id,
-                amount: order.totalAmount,
-                paymentMethod,
-            });
-
-        /*
+  /*
         |-------------------------------------------------------------
         | CREATE PAYMENT TRANSACTION
         |-------------------------------------------------------------
         */
 
-        await PaymentTransaction.create({
+  await PaymentTransaction.create({
+    order: order._id,
 
-            order: order._id,
+    customer: order.customer,
 
-            customer: order.customer,
+    amount: order.totalAmount,
 
-            amount: order.totalAmount,
+    paymentMethod,
 
-            paymentMethod,
+    paymentSessionId: paymentSession.paymentSessionId,
 
-            paymentSessionId:
-                paymentSession.paymentSessionId,
+    gateway: "DUMMY_GATEWAY",
 
-            gateway: "DUMMY_GATEWAY",
+    status: "PENDING",
+  });
 
-            status: "PENDING",
-        });
-
-        return paymentSession;
-
-
-
-
-    };
+  return paymentSession;
+};
 /*                                                                 |
 | ------------------------------------------------------------------ |
 | VERIFY PAYMENT                                                     |
@@ -99,150 +79,119 @@ export const createPaymentSessionService =
 | */
 
 export const verifyPaymentService = async ({
-    paymentSessionId,
-    paymentStatus,
+  paymentSessionId,
+  paymentStatus,
 }) => {
-
-    /*
+  /*
     |-------------------------------------------------------------
     | FIND PAYMENT TRANSACTION
     |-------------------------------------------------------------
     */
 
-    const transaction =
-        await PaymentTransaction.findOne({
-            paymentSessionId,
-        });
+  const transaction = await PaymentTransaction.findOne({
+    paymentSessionId,
+  });
 
-    if (!transaction) {
-        throw new Error(
-            "Payment transaction not found"
-        );
-    }
+  if (!transaction) {
+    throw new Error("Payment transaction not found");
+  }
 
-    console.log(
-        "=========== Transaction ============="
-    );
-    console.log(transaction);
+  console.log("=========== Transaction =============");
+  console.log(transaction);
 
-    /*
+  /*
     |-------------------------------------------------------------
     | FIND ORDER
     |-------------------------------------------------------------
     */
 
-    const order = await Order.findById(
-        transaction.order
-    );
+  const order = await Order.findById(transaction.order);
 
-    if (!order) {
-        throw new Error(
-            "Order not found"
-        );
-    }
+  if (!order) {
+    throw new Error("Order not found");
+  }
 
-    console.log(
-        "=========== Order ============="
-    );
-    console.log(order);
+  console.log("=========== Order =============");
+  console.log(order);
 
-    /*
+  /*
     |-------------------------------------------------------------
     | ALREADY PROCESSED
     |-------------------------------------------------------------
     */
 
-    if (
-        transaction.status === "SUCCESS"
-    ) {
-        return {
-            verified: true,
-            alreadyProcessed: true,
-        };
-    }
+  if (transaction.status === "SUCCESS") {
+    return {
+      verified: true,
+      alreadyProcessed: true,
+    };
+  }
 
-    /*
+  /*
     |-------------------------------------------------------------
     | SUCCESS PAYMENT
     |-------------------------------------------------------------
     */
 
-    if (
-        paymentStatus === "SUCCESS"
-    ) {
+  if (paymentStatus === "SUCCESS") {
+    console.log("SUCCESS PAYMENT RECEIVED");
 
-        console.log(
-            "SUCCESS PAYMENT RECEIVED"
-        );
-
-        /*
+    /*
         |---------------------------------------------------------
         | UPDATE ORDER
         |---------------------------------------------------------
         */
 
-        order.paymentStatus = "PAID";
+    order.paymentStatus = "PAID";
 
-        order.paymentId =
-            paymentSessionId;
+    order.paymentId = paymentSessionId;
 
-        order.paidAt =
-            new Date();
+    order.paidAt = new Date();
 
-        await order.save();
+    await order.save();
 
-        console.log(
-            "Order Updated Successfully"
-        );
+    console.log("Order Updated Successfully");
 
-        /*
+    /*
         |---------------------------------------------------------
         | UPDATE TRANSACTION
         |---------------------------------------------------------
         */
 
-        transaction.status =
-            "SUCCESS";
+    transaction.status = "SUCCESS";
 
-        transaction.paidAt =
-            new Date();
+    transaction.paidAt = new Date();
 
-        await transaction.save();
+    await transaction.save();
 
-        console.log(
-            "Transaction Updated Successfully"
-        );
+    console.log("Transaction Updated Successfully");
 
-        return {
-            verified: true,
-            order,
-        };
-    }
+    return {
+      verified: true,
+      order,
+    };
+  }
 
-    /*
+  /*
     |-------------------------------------------------------------
     | FAILED PAYMENT
     |-------------------------------------------------------------
     */
 
-    order.paymentStatus =
-        "FAILED";
+  order.paymentStatus = "FAILED";
 
-    order.paymentFailureReason =
-        "Dummy payment failed";
+  order.paymentFailureReason = "Dummy payment failed";
 
-    await order.save();
+  await order.save();
 
-    transaction.status =
-        "FAILED";
+  transaction.status = "FAILED";
 
-    transaction.failureReason =
-        "Dummy payment failed";
+  transaction.failureReason = "Dummy payment failed";
 
-    await transaction.save();
+  await transaction.save();
 
-    return {
-        verified: false,
-        order,
-    };
+  return {
+    verified: false,
+    order,
+  };
 };

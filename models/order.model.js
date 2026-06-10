@@ -220,7 +220,7 @@ const orderSchema = new mongoose.Schema(
 
     paymentStatus: {
       type: String,
-      enum: Object.values(PaymentStatus),
+      enum: ["PENDING", "PAID", "FAILED", "REFUNDED"],
       // enum: ["PENDING", "PAID", "FAILED", "REFUNDED"],
 
       default: "PENDING",
@@ -319,6 +319,11 @@ const orderSchema = new mongoose.Schema(
     discount: {
       type: Number,
       default: 0,
+    },
+
+    couponCode: {
+      type: String,
+      default: null,
     },
 
     totalAmount: {

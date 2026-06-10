@@ -38,19 +38,19 @@ const restaurantSchema = new mongoose.Schema(
 
     images: [String],
 
-    address: {
-      addressLine: String,
+    // address: {
+    //   addressLine: String,
 
-      landmark: String,
+    //   landmark: String,
 
-      city: String,
+    //   city: String,
 
-      state: String,
+    //   state: String,
 
-      pincode: String,
+    //   pincode: String,
 
-      country: String,
-    },
+    //   country: String,
+    // },
     isVeg: {
       type: Boolean,
       default: false,
@@ -69,8 +69,28 @@ const restaurantSchema = new mongoose.Schema(
       },
 
       coordinates: {
-        type: [Number], // [lng, lat],
-        required: true,
+        type: [Number],
+        default: [0, 0],
+      },
+
+      address: {
+        type: String,
+        default: "",
+      },
+
+      city: {
+        type: String,
+        default: "",
+      },
+
+      state: {
+        type: String,
+        default: "",
+      },
+
+      pincode: {
+        type: String,
+        default: "",
       },
     },
 

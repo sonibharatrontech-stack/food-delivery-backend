@@ -37,7 +37,12 @@ const reviewSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
-
+    likedBy: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     isEdited: {
       type: Boolean,
       default: false,
@@ -51,8 +56,32 @@ const reviewSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
+
+/*
+|------------------------------------------------------------------
+| INDEXES
+|------------------------------------------------------------------
+*/
+
+reviewSchema.index({
+  restaurant: 1,
+});
+
+reviewSchema.index({
+  user: 1,
+});
+
+reviewSchema.index({
+  order: 1,
+});
+
+/*
+|------------------------------------------------------------------
+| MODEL
+|------------------------------------------------------------------
+*/
 
 const Review = mongoose.model("Review", reviewSchema);
 

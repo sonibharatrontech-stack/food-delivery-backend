@@ -3,7 +3,7 @@ import {
   createPaymentSession,
   dummyPaymentWebhook,
   verifyPayment,
-} from "../controllers/payment.controller";
+} from "../controllers/payment.controller.js";
 
 const router = express.Router();
 

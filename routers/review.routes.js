@@ -12,6 +12,7 @@ import {
   reportReview,
   updateReviewStatus,
 } from "../controllers/review.controller.js";
+import authMiddleware from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
@@ -33,18 +34,18 @@ router.get("/get-review/:id", getReviewById);
 router.post("/create-review", createReview);
 
 // Update a review
-router.put("/update-review/:id", updateReview);
+router.patch("/update-review/:id", updateReview);
 
 // Delete a review
 router.delete("/delete-review/:id", deleteReview);
 
 // Like a review
-router.patch("/like-review/:id", likeReview);
+router.patch("/like-review/:id", authMiddleware, likeReview);
 
 // Report a review
 router.post("/report-review/:id", reportReview);
 
 // Update review status (ACTIVE, HIDDEN, REPORTED)
-router.patch("/update-review-status/:id", updateReviewStatus);
+router.patch("/review-status/:id", updateReviewStatus);
 
 export default router;
