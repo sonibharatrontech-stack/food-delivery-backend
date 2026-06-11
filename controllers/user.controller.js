@@ -19,23 +19,7 @@ export const createUser = asyncHandler(async (req, res) => {
   }
 });
 
-// GET ALL USERS
-export const getAllUsers = asyncHandler(async (req, res) => {
-  try {
-    const users = await User.find().select("-otp -refreshToken");
 
-    return res.status(200).json({
-      success: true,
-      count: users.length,
-      data: users,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
 
 // GET SINGLE USER
 export const getUserById = asyncHandler(async (req, res) => {
@@ -91,29 +75,7 @@ export const updateUser = asyncHandler(async (req, res) => {
   }
 });
 
-// DELETE USER
-export const deleteUser = asyncHandler(async (req, res) => {
-  try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
 
-    if (!deletedUser) {
-      return res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      message: "User deleted successfully",
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: error.message,
-    });
-  }
-});
 
 // ===================Addresss===================
 

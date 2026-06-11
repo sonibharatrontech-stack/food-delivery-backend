@@ -6,6 +6,7 @@ import ApiError from "../utils/APIError.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import Restaurant from "../models/restaurant.model.js";
 import restaurantPartnerModel from "../models/restaurantPartner.model.js";
+import User from "../models/user.model.js";
 // ======================================================
 // ADMIN -  RESTAURANT
 // ======================================================
@@ -590,4 +591,149 @@ export const blockDeliveryPartner = asyncHandler(async (req, res) => {
     success: true,
     message: "Delivery partner blocked successfully",
   });
+});
+
+// ======================================================
+// ADMIN USERS ROUTES
+// ====================================================
+// BLOCK USER
+
+export const blockUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const user = await User.findById(id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  // Prevent blocking Admins/Masters
+  if (user.roles.includes(Roles.ADMIN) || user.roles.includes(Roles.MASTER)) {
+    return res.status(403).json({
+      success: false,
+      message: "Admin accounts cannot be blocked",
+    });
+  }
+
+  if (user.isBlocked) {
+    return res.status(400).json({
+      success: false,
+      message: "User is already blocked",
+    });
+  }
+
+  user.isBlocked = true;
+
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "User blocked successfully",
+    data: user,
+  });
+});
+
+// UNBLOCK USER
+
+export const unblockUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const user = await User.findById(id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  if (!user.isBlocked) {
+    return res.status(400).json({
+      success: false,
+      message: "User is already active",
+    });
+  }
+
+  user.isBlocked = false;
+
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "User unblocked successfully",
+    data: user,
+  });
+});
+
+// ==========================================
+// ADMIN USERS
+// =======================================
+// GET ALL USERS
+export const getAllUsers = asyncHandler(async (req, res) => {
+  try {
+    const users = await User.find().select("-otp -refreshToken");
+
+    return res.status(200).json({
+      success: true,
+      count: users.length,
+      data: users,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+export const getUserById = asyncHandler(async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select(
+      "-otp -refreshToken",
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+});
+
+// DELETE USER
+export const deleteUser = asyncHandler(async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+
+    if (!deletedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
 });

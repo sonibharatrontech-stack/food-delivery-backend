@@ -18,6 +18,11 @@ import {
   blockRestaurant,
   featureRestaurant,
   getRestaurantStats,
+  blockUser,
+  unblockUser,
+  getAllUsers,
+  getUserById,
+  deleteUser,
 } from "../controllers/admin.controller.js";
 
 import authMiddleware from "../middlewares/auth.middleware.js";
@@ -160,6 +165,27 @@ router.patch(
   authMiddleware,
   roleMiddleware(Roles.ADMIN, Roles.SUPER_ADMIN),
   blockDeliveryPartner,
+);
+
+// ==========================================
+// ADMIN USERS ROUTES
+// ==============================================
+router.get("/user/get-all-users", getAllUsers);
+router.get("/user/get-user/:id", getUserById);
+router.delete("/user/delete-user/:id", deleteUser);
+
+router.patch(
+  "/user/block-user/:id",
+  authMiddleware,
+  roleMiddleware(Roles.ADMIN, Roles.MASTER),
+  blockUser,
+);
+
+router.patch(
+  "/user/unblock-user/:id",
+  authMiddleware,
+  roleMiddleware(Roles.ADMIN, Roles.MASTER),
+  unblockUser,
 );
 
 export default router;
