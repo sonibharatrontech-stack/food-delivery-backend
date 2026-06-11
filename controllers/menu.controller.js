@@ -290,3 +290,45 @@ export const searchMenuItems = asyncHandler(async (req, res) => {
     data: menuItems,
   });
 });
+
+export const getMenuCategories = asyncHandler(async (req, res) => {
+  const categories = await Menu.distinct("category");
+
+  res.status(200).json({
+    success: true,
+    data: categories,
+  });
+});
+
+export const getRestaurantsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+
+    const menuItems = await Menu.find({
+      category,
+      isAvailable: true,
+    }).populate("restaurant");
+    console.log(menuItems.filter((item) => !item.restaurant));
+    const validItems = menuItems.filter((item) => item.restaurant);
+
+    const restaurants = [
+      ...new Map(
+        validItems.map((item) => [
+          item.restaurant._id.toString(),
+          item.restaurant,
+        ]),
+      ).values(),
+    ];
+
+    return res.status(200).json({
+      success: true,
+      count: restaurants.length,
+      data: restaurants,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

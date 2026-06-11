@@ -9,6 +9,8 @@ import {
   searchMenuItems,
   getAllMenus,
   searchRestaurantMenuItems,
+  getMenuCategories,
+  getRestaurantsByCategory,
 } from "../controllers/menu.controller.js";
 
 const router = express.Router();
@@ -61,5 +63,10 @@ router.get(
 
 router.get("/menus", getAllMenus);
 router.get("/menus/search", searchMenuItems);
+router.get("/category", getMenuCategories);
+router.get(
+  "/category/:category",
+  getRestaurantsByCategory
+);
 
 export default router;
