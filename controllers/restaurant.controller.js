@@ -9,7 +9,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import ApiError from "../utils/ApiError.js";
 import Order from "../models/order.model.js";
 import User from "../models/user.model.js";
-
+import { updateOrderStatus } from "../services/orderStatus.service.js";
 // ======================================================
 // CREATE RESTAURANT by Resturant Partner
 // ======================================================
@@ -500,24 +500,6 @@ export const getAllRestaurants = asyncHandler(async (req, res) => {
 // ======================================================
 // TOGGLE Favourite by Customer
 // ======================================================
-// export const toggleFavouriteRestaurant = asyncHandler(async (req, res) => {
-//   const { restaurantId } = req.params;
-
-//   const restaurant = await Restaurant.findById(restaurantId);
-
-//   if (!restaurant) {
-//     throw new ApiError(404, "Restaurant not found");
-//   }
-
-//   restaurant.isFavourite = !restaurant.isFavourite;
-
-//   await restaurant.save();
-
-//   return res.status(200).json({
-//     success: true,
-//     isFavourite: restaurant.isFavourite,
-//   });
-// });
 
 export const toggleFavouriteRestaurant = async (req, res) => {
   const { restaurantId } = req.params;
@@ -675,160 +657,4 @@ export const searchRestaurants = asyncHandler(async (req, res) => {
   });
 });
 
-// ===========================Orders==============================
 
-// controllers/order.controller.js
-
-export const confirmOrder = asyncHandler(async (req, res) => {
-  const { orderId } = req.params;
-
-  const order = await Order.findById(orderId);
-
-  if (!order) {
-    throw new ApiError(404, "Order not found");
-  }
-
-  order.orderStatus = "CONFIRMED";
-
-  order.statusTimeline.push({
-    status: "CONFIRMED",
-    timestamp: new Date(),
-  });
-
-  await order.save();
-
-  return res.status(200).json({
-    success: true,
-    message: "Order confirmed",
-  });
-});
-
-export const startPreparingOrder = asyncHandler(async (req, res) => {
-  const { orderId } = req.params;
-
-  const order = await Order.findById(orderId);
-
-  if (!order) {
-    throw new ApiError(404, "Order not found");
-  }
-
-  order.orderStatus = "PREPARING";
-
-  order.statusTimeline.push({
-    status: "PREPARING",
-    timestamp: new Date(),
-  });
-
-  await order.save();
-
-  res.status(200).json({
-    success: true,
-    message: "Food preparation started",
-  });
-});
-
-export const markOrderReady = asyncHandler(async (req, res) => {
-  const { orderId } = req.params;
-
-  const order = await Order.findById(orderId);
-
-  if (!order) {
-    throw new ApiError(404, "Order not found");
-  }
-
-  order.orderStatus = "READY_FOR_PICKUP";
-
-  order.statusTimeline.push({
-    status: "READY_FOR_PICKUP",
-    timestamp: new Date(),
-  });
-
-  await order.save();
-
-  res.status(200).json({
-    success: true,
-    message: "Order ready for pickup",
-  });
-});
-
-// ======================================================
-// ADMIN - BLOCK RESTAURANT
-// ======================================================
-
-export const blockRestaurant = asyncHandler(async (req, res) => {
-  const { restaurantId } = req.params;
-
-  const restaurant = await Restaurant.findById(restaurantId);
-
-  if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found");
-  }
-
-  restaurant.status = "BLOCKED";
-
-  restaurant.isOpen = false;
-
-  await restaurant.save();
-
-  return res.status(200).json({
-    success: true,
-    message: "Restaurant blocked successfully",
-  });
-});
-
-// ======================================================
-// ADMIN - FEATURE RESTAURANT
-// ======================================================
-
-export const featureRestaurant = asyncHandler(async (req, res) => {
-  const { restaurantId } = req.params;
-
-  const restaurant = await Restaurant.findById(restaurantId);
-
-  if (!restaurant) {
-    throw new ApiError(404, "Restaurant not found");
-  }
-
-  restaurant.isFeatured = !restaurant.isFeatured;
-
-  await restaurant.save();
-
-  return res.status(200).json({
-    success: true,
-    message: restaurant.isFeatured
-      ? "Restaurant featured"
-      : "Restaurant unfeatured",
-
-    isFeatured: restaurant.isFeatured,
-  });
-});
-
-// ======================================================
-// ADMIN - GET RESTAURANTSTATS
-// ======================================================
-export const getRestaurantStats = asyncHandler(async (req, res) => {
-  const totalRestaurants = await Restaurant.countDocuments();
-
-  const activeRestaurants = await Restaurant.countDocuments({
-    status: "ACTIVE",
-  });
-
-  const featuredRestaurants = await Restaurant.countDocuments({
-    isFeatured: true,
-  });
-
-  const openRestaurants = await Restaurant.countDocuments({
-    isOpen: true,
-  });
-
-  return res.status(200).json({
-    success: true,
-
-    stats: {
-      totalRestaurants,
-      activeRestaurants,
-      featuredRestaurants,
-      openRestaurants,
-    },
-  });
-});

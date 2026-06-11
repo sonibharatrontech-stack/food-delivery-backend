@@ -1,7 +1,7 @@
 import {
   createPaymentSessionService,
   verifyPaymentService,
-} from "./payment.service.js";
+} from "../services/payment.service.js";
 
 /*
 |------------------------------------------------------------------
@@ -9,37 +9,25 @@ import {
 |------------------------------------------------------------------
 */
 
-export const createPaymentSession = async (
-  req,
-  res
-) => {
+export const createPaymentSession = async (req, res) => {
   try {
+    const { orderId, paymentMethod } = req.body;
 
-    const {
+    const paymentSession = await createPaymentSessionService({
       orderId,
       paymentMethod,
-    } = req.body;
-
-    const paymentSession =
-      await createPaymentSessionService({
-        orderId,
-        paymentMethod,
-      });
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        "Payment session created successfully",
+      message: "Payment session created successfully",
       data: paymentSession,
     });
-
   } catch (error) {
-
     return res.status(500).json({
       success: false,
       message: error.message,
     });
-
   }
 };
 
@@ -49,41 +37,33 @@ export const createPaymentSession = async (
 |------------------------------------------------------------------
 */
 
-export const verifyPayment = async (
-  req,
-  res
-) => {
+export const verifyPayment = async (req, res) => {
   try {
+    console.log("VERIFY REQUEST:", req.body);
 
-    const {
+    const { orderId, paymentSessionId, paymentStatus } = req.body;
+
+    const result = await verifyPaymentService({
       orderId,
       paymentSessionId,
       paymentStatus,
-    } = req.body;
-
-    const result =
-      await verifyPaymentService({
-        orderId,
-        paymentSessionId,
-        paymentStatus,
-      });
+    });
 
     return res.status(200).json({
       success: true,
-      message:
-        result.verified
-          ? "Payment verified successfully"
-          : "Payment failed",
+      message: result.verified
+        ? "Payment verified successfully"
+        : "Payment failed",
       data: result,
     });
-
   } catch (error) {
+    console.error("VERIFY ERROR:", error);
 
     return res.status(500).json({
       success: false,
       message: error.message,
+      stack: error.stack,
     });
-
   }
 };
 
@@ -93,41 +73,30 @@ export const verifyPayment = async (
 |------------------------------------------------------------------
 */
 
-export const dummyPaymentWebhook =
-  async (req, res) => {
-    try {
+export const dummyPaymentWebhook = async (req, res) => {
+  try {
+    const { paymentSessionId, paymentStatus } = req.body;
 
-      const {
-        paymentSessionId,
-        paymentStatus,
-      } = req.body;
-
-      /*
+    /*
       |-------------------------------------------------------------
       | VERIFY PAYMENT USING SERVICE
       |-------------------------------------------------------------
       */
 
-      const result =
-        await verifyPaymentService({
-          paymentSessionId,
-          paymentStatus,
-        });
+    const result = await verifyPaymentService({
+      paymentSessionId,
+      paymentStatus,
+    });
 
-      return res.status(200).json({
-        success: true,
-        message:
-          "Webhook processed successfully",
-        data: result,
-      });
-
-    } catch (error) {
-
-      return res.status(500).json({
-        success: false,
-        message: error.message,
-      });
-
-    }
-  };
-
+    return res.status(200).json({
+      success: true,
+      message: "Webhook processed successfully",
+      data: result,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

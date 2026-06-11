@@ -1,5 +1,6 @@
 import Cart from "../models/cart.model.js";
-
+import Menu from "../models/menu.model.js";
+import Restaurant from "../models/restaurant.model.js";
 /*
 |------------------------------------------------------------------
 | ADD TO CART
@@ -7,61 +8,162 @@ import Cart from "../models/cart.model.js";
 */
 export const addToCart = async (req, res) => {
   try {
-    const { userId, restaurantId, menuItem, priceAtTime, quantity } = req.body;
+    const { userId, menuItem, quantity = 1 } = req.body;
 
-    let cart = await Cart.findOne({ user: userId, status: "ACTIVE" });
+    /*
+    |------------------------------------------------------------------
+    | FIND MENU
+    |------------------------------------------------------------------
+    */
 
-    // CASE 1: NO CART → CREATE FRESH
+    const menu = await Menu.findById(menuItem);
+
+    console.log("========== MENU ==========");
+    console.log(menu);
+
+    if (!menu) {
+      return res.status(404).json({
+        success: false,
+        message: "Menu item not found",
+      });
+    }
+
+    /*
+    |------------------------------------------------------------------
+    | FIND RESTAURANT
+    |------------------------------------------------------------------
+    */
+
+    console.log("Restaurant ID From Menu:");
+    console.log(menu.restaurant);
+
+    const restaurant = await Restaurant.findById(menu.restaurant);
+
+    console.log("========== RESTAURANT ==========");
+    console.log(restaurant);
+
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found",
+      });
+    }
+
+    const restaurantId = restaurant._id;
+
+    console.log("================================");
+    console.log("User ID:", userId);
+    console.log("Restaurant ID:", restaurantId);
+
+    /*
+    |------------------------------------------------------------------
+    | FIND EXISTING CART
+    |------------------------------------------------------------------
+    */
+
+    let cart = await Cart.findOne({
+      user: userId,
+      status: "ACTIVE",
+    });
+
+    console.log("Cart Found:", cart);
+    console.log("================================");
+
+    /*
+    |------------------------------------------------------------------
+    | CREATE NEW CART
+    |------------------------------------------------------------------
+    */
+
     if (!cart) {
       cart = await Cart.create({
         user: userId,
+
         restaurant: restaurantId,
-        items: [{ menuItem, priceAtTime, quantity: quantity || 1 }],
+
+        items: [
+          {
+            menuItem: menu._id,
+            quantity,
+            priceAtTime: menu.price,
+          },
+        ],
+
+        subtotal: menu.price * quantity,
+
+        totalAmount: menu.price * quantity,
       });
-      return res
-        .status(201)
-        .json({ success: true, message: "Item added to cart", data: cart });
+
+      return res.status(201).json({
+        success: true,
+        message: "Item added to cart",
+        data: cart,
+      });
     }
 
-    // Empty cart → allow restaurant switch
-    if (cart.items.length === 0) {
-      cart.restaurant = restaurantId;
-    }
+    /*
+    |------------------------------------------------------------------
+    | DIFFERENT RESTAURANT CHECK
+    |------------------------------------------------------------------
+    */
 
-    // CASE 2: DIFFERENT RESTAURANT → BLOCK
-    if (cart.restaurant.toString() !== restaurantId) {
+    if (cart.restaurant.toString() !== restaurantId.toString()) {
       return res.status(400).json({
         success: false,
         message:
-          "Your cart has items from another restaurant. Please clear your cart first.",
-        existingRestaurant: cart.restaurant,
+          "Your cart contains items from another restaurant. Please clear your cart first.",
       });
     }
 
-    // CASE 3: SAME RESTAURANT → ADD OR INCREASE QTY
+    /*
+    |------------------------------------------------------------------
+    | CHECK IF ITEM ALREADY EXISTS
+    |------------------------------------------------------------------
+    */
+
     const existingIndex = cart.items.findIndex(
-      (item) => item.menuItem.toString() === menuItem,
+      (item) => item.menuItem.toString() === menu._id.toString(),
     );
 
     if (existingIndex !== -1) {
-      cart.items[existingIndex].quantity += quantity || 1;
+      cart.items[existingIndex].quantity += quantity;
     } else {
-      cart.items.push({ menuItem, priceAtTime, quantity: quantity || 1 });
+      cart.items.push({
+        menuItem: menu._id,
+        quantity,
+        priceAtTime: menu.price,
+      });
     }
 
-    // RECALCULATE SUBTOTAL
+    /*
+    |------------------------------------------------------------------
+    | RECALCULATE TOTALS
+    |------------------------------------------------------------------
+    */
+
     cart.subtotal = cart.items.reduce(
       (sum, item) => sum + item.priceAtTime * item.quantity,
       0,
     );
+
     cart.totalAmount = cart.subtotal + cart.deliveryFee - cart.discount;
 
     await cart.save();
-    return res
-      .status(200)
-      .json({ success: true, message: "Cart updated", data: cart });
+
+    return res.status(200).json({
+      success: true,
+      message: "Cart updated",
+      data: cart,
+    });
   } catch (error) {
-    return res.status(500).json({ success: false, message: error.message });
+    console.error("========== ERROR ==========");
+    console.error(error);
+    console.error("===========================");
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 

@@ -9,10 +9,7 @@ import {
   toggleRestaurantOpenStatus,
   getNearbyRestaurants,
   getFeaturedRestaurants,
-  blockRestaurant,
-  featureRestaurant,
   getAllRestaurants,
-  getRestaurantStats,
   searchRestaurants,
   getTopRatedRestaurants,
   toggleFavouriteRestaurant,
@@ -116,29 +113,5 @@ router.patch(
 // ======================================================
 // ADMIN ROUTES
 // ======================================================
-
-// BLOCK RESTAURANT
-router.patch(
-  "/block/:restaurantId",
-  authMiddleware,
-  roleMiddleware(Roles.ADMIN, Roles.MASTER),
-  blockRestaurant,
-);
-
-// FEATURE / UNFEATURE RESTAURANT
-router.patch(
-  "/feature/:restaurantId",
-  authMiddleware,
-  roleMiddleware(Roles.ADMIN, Roles.MASTER),
-  featureRestaurant,
-);
-
-// CHANGE STATUS
-router.get(
-  "/restaurants-status",
-  authMiddleware,
-  roleMiddleware(Roles.RESTAURANT_PARTNER, Roles.ADMIN, Roles.MASTER),
-  getRestaurantStats,
-);
 
 export default router;

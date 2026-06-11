@@ -1,22 +1,13 @@
-# 🍔 Food Delivery Backend Architecture
+# 🍔 BiteRush - Production Grade Food Delivery Platform
 
-Scalable production-level food delivery backend inspired by:
+A scalable, enterprise-level food delivery ecosystem inspired by industry leaders:
 
 * Swiggy
 * Zomato
 * Uber Eats
 * DoorDash
 
-Built using modern backend architecture with:
-
-* Node.js
-* Express.js
-* MongoDB
-* PostgreSQL
-* Redis
-* Socket.IO
-* JWT Authentication
-* Zod Validation
+BiteRush is designed using modern distributed architecture principles with real-time tracking, multi-role authentication, geospatial search, Redis caching, Socket.IO communication, and scalable database design.
 
 ---
 
@@ -26,6 +17,8 @@ Built using modern backend architecture with:
 
 * React.js
 * TypeScript
+* Redux Toolkit + RTK Query
+* React Router
 * Ant Design
 * Tailwind CSS
 * Socket.IO Client
@@ -39,86 +32,142 @@ Built using modern backend architecture with:
 * MongoDB (Mongoose)
 * PostgreSQL
 * Redis
-* JWT Authentication
 * Socket.IO
+* JWT Authentication
 * Zod Validation
 
 ---
 
-# 👥 Main Roles
+# 🏗️ System Architecture
+
+```text
+                 ┌─────────────────────┐
+                 │     React Client    │
+                 └──────────┬──────────┘
+                            │
+                     REST APIs
+                            │
+                            ▼
+                ┌─────────────────────┐
+                │    Express Server   │
+                └───────┬─────┬───────┘
+                        │     │
+                        │     │
+                        │     ▼
+                        │  Socket.IO
+                        │
+                        ▼
+               ┌──────────────────┐
+               │      Redis       │
+               └──────────────────┘
+                        ▲
+                        │
+         ┌──────────────┼──────────────┐
+         │                             │
+         ▼                             ▼
+ ┌────────────────┐          ┌────────────────┐
+ │    MongoDB     │          │ PostgreSQL     │
+ └────────────────┘          └────────────────┘
+```
+
+---
+
+# 👥 Platform Roles
 
 ## Customer
 
-* OTP Login/Register
-* Browse restaurants
-* Search & filters
-* Place orders
-* Live order tracking
-* Ratings & reviews
-* Payments
+### Features
+
+* OTP Login & Registration
+* Browse Restaurants
+* Search & Filters
+* Restaurant Details
+* Add To Cart
+* Place Orders
+* Live Order Tracking
+* Ratings & Reviews
+* Order History
+* Address Management
+* Notifications
 
 ---
 
 ## Restaurant Partner
 
-* Apply for onboarding
-* Upload business documents
-* Admin approval workflow
-* Manage restaurants
-* Open/Close restaurants
-* Menu management
-* Order handling
+### Features
+
+* Partner Application
+* Document Verification
+* Admin Approval Workflow
+* Restaurant Creation
+* Restaurant Management
+* Menu Management
+* Open / Close Restaurant
+* Order Management
+* Earnings Dashboard
 
 ---
 
 ## Delivery Partner
 
-* Apply with vehicle & documents
-* Live location updates
-* Accept/reject orders
-* Earnings tracking
-* Availability management
-* Real-time order delivery
+### Features
+
+* Delivery Partner Application
+* Vehicle Verification
+* Live Location Updates
+* Accept / Reject Orders
+* Online / Offline Availability
+* Active Deliveries
+* Earnings Tracking
+* Delivery History
 
 ---
 
 ## Admin
 
-* Approve/reject restaurant partners
-* Approve/reject delivery partners
-* Block/suspend accounts
-* Feature restaurants
-* Analytics & monitoring
+### Features
+
+* Restaurant Partner Approval
+* Delivery Partner Approval
+* User Management
+* Restaurant Moderation
+* Featured Restaurants
+* Analytics Dashboard
+* Platform Monitoring
 
 ---
 
 ## Master Admin
 
-* Full platform access
-* Manage admins
-* Global controls
-* Reports & analytics
+### Features
+
+* Complete Platform Access
+* Admin Management
+* Revenue Monitoring
+* Global Platform Controls
+* Security Controls
+* Audit Logs
 
 ---
 
-# 🗂️ Backend Folder Structure
+# 📂 Backend Folder Structure
 
 ```text
-src/
+src
 │
-├── config/
-├── controllers/
-├── middlewares/
-├── models/
-├── routes/
-├── validations/
-├── enums/
-├── services/
-├── sockets/
-├── utils/
-├── constants/
-├── uploads/
-├── docs/
+├── config
+├── constants
+├── controllers
+├── middlewares
+├── models
+├── routes
+├── services
+├── sockets
+├── validations
+├── enums
+├── utils
+├── uploads
+├── docs
 │
 ├── app.js
 └── server.js
@@ -126,131 +175,82 @@ src/
 
 ---
 
-# 🧠 Professional Architecture
+# 🔐 Authentication Architecture
 
-## Current Backend Features
+## OTP Authentication Flow
 
-### ✅ Zod Validation System
-
-Used for:
-
-* Body validation
-* Query validation
-* Params validation
-* Strong API validation
-
-Example:
-
-```js
-router.post(
-  "/create",
-  validate(createRestaurantSchema),
-  createRestaurant,
-);
+```text
+User Enters Phone Number
+            │
+            ▼
+Generate OTP
+            │
+            ▼
+Store OTP In Redis
+            │
+            ▼
+Verify OTP
+            │
+            ▼
+Generate JWT Tokens
+            │
+            ▼
+Authenticated User
 ```
 
 ---
 
-## ✅ Role-Based Authentication
+## JWT Strategy
+
+### Access Token
+
+Used For:
+
+* API Authentication
+* Protected Routes
+
+### Refresh Token
+
+Used For:
+
+* Session Renewal
+* Long-Term Login
+
+---
+
+# 👤 Multi Role System
 
 Supported Roles:
 
 ```js
 CUSTOMER
-ADMIN
-MASTER
 RESTAURANT_PARTNER
 DELIVERY_PARTNER
+ADMIN
+MASTER_ADMIN
 ```
 
-Multi-role support enabled:
-
-Example:
+Multiple Roles Supported:
 
 ```js
-roles: ["CUSTOMER", "DELIVERY_PARTNER"]
+roles: [
+  "CUSTOMER",
+  "DELIVERY_PARTNER"
+]
 ```
 
 ---
 
-## ✅ Centralized Enum System
+# 📍 Geo Location Architecture
 
-Enums stored in:
+MongoDB 2dsphere indexing powers:
 
-```text
-src/enums/
-```
+* Nearby Restaurants
+* Driver Matching
+* Live Tracking
+* Location Search
 
-Examples:
-
-* Roles.enum.js
-* RestaurantStatus.enum.js
-* RestaurantType.enum.js
-* VehicleType.enum.js
-* DeliveryPartnerStatus.enum.js
-* OrderStatus.enum.js
-
----
-
-# 🍽️ Restaurant System
-
-## Restaurant Features
-
-### Restaurant Types
-
-```text
-VEG
-NON_VEG
-PURE_VEG
-```
-
-### Restaurant Status
-
-```text
-ACTIVE
-INACTIVE
-BLOCKED
-```
-
-### Restaurant Controls
-
-* Open/Close
-* Featured restaurants
-* Delivery settings
-* Ratings
-* Geo location
-* Search & filters
-
----
-
-# 🔍 Restaurant Filtering System
-
-Supported filters:
-
-```text
-search
-city
-cuisine
-isFeatured
-isOpen
-isVeg
-restaurantType
-rating
-sorting
-pagination
-```
-
-Example API:
-
-```bash
-GET /api/restaurants?city=Mumbai&isVeg=true
-```
-
----
-
-# 📍 Geo Location System
-
-## MongoDB 2dsphere Index
+Example:
 
 ```js
 restaurantSchema.index({
@@ -258,15 +258,7 @@ restaurantSchema.index({
 });
 ```
 
-Used for:
-
-* Nearby restaurants
-* Delivery tracking
-* Driver matching
-
----
-
-## Nearby Restaurant Query
+Nearby Search:
 
 ```js
 $near
@@ -276,135 +268,194 @@ $maxDistance
 
 ---
 
-# 🚚 Delivery Partner System
+# 🍽️ Restaurant Module
 
-## Delivery Partner Workflow
+## Restaurant Types
 
 ```text
-Apply
-   ↓
-Upload Documents
-   ↓
-PENDING
-   ↓
-Admin Verification
-   ↓
-APPROVED
-   ↓
-User Role Updated
-   ↓
-Can Accept Orders
+VEG
+NON_VEG
+PURE_VEG
 ```
 
----
-
-## Delivery Partner Features
-
-### Vehicle Types
+## Restaurant Status
 
 ```text
-BIKE
-BICYCLE
-SCOOTER
-```
-
-### Delivery Partner Status
-
-```text
-PENDING
-UNDER_REVIEW
-APPROVED
-REJECTED
+ACTIVE
+INACTIVE
 BLOCKED
 ```
 
+## Features
+
+* Featured Restaurants
+* Open / Close Status
+* Ratings
+* Cuisine Filters
+* Geo Search
+* Availability Control
+
 ---
 
-## Live Tracking Features
+# 🔎 Restaurant Search & Filtering
 
-* Real-time location updates
-* Online/Offline status
-* Nearby order detection
-* Order assignment
-* Delivery status updates
-
----
-
-# 🔐 Authentication System
-
-## OTP Authentication Workflow
+Supported Filters:
 
 ```text
-Enter Phone
-     ↓
-Generate OTP
-     ↓
-Store OTP in Redis
-     ↓
-Verify OTP
-     ↓
-Generate JWT
-     ↓
-Login Success
+search
+city
+cuisine
+isFeatured
+isOpen
+restaurantType
+rating
+sortBy
+pagination
+```
+
+Example:
+
+```bash
+GET /api/restaurant?city=Mumbai&isOpen=true
 ```
 
 ---
 
-## JWT Strategy
+# 🚚 Delivery Partner Workflow
 
-### Access Token
-
-* Short expiry
-* API authentication
-
-### Refresh Token
-
-* Long expiry
-* Session management
+```text
+Apply
+  │
+  ▼
+Upload Documents
+  │
+  ▼
+PENDING
+  │
+  ▼
+Admin Verification
+  │
+  ▼
+APPROVED
+  │
+  ▼
+Role Updated
+  │
+  ▼
+Eligible For Deliveries
+```
 
 ---
 
-# ⚡ Redis Usage
+# 🚗 Vehicle Types
 
-Used for:
-
-* OTP storage
-* Rate limiting
-* Session storage
-* Caching
-* Socket mapping
-* Live tracking cache
+```text
+BIKE
+SCOOTER
+BICYCLE
+```
 
 ---
 
-## Example Redis Keys
+# 📦 Order Lifecycle
+
+```text
+PLACED
+    │
+    ▼
+CONFIRMED
+    │
+    ▼
+PREPARING
+    │
+    ▼
+READY_FOR_PICKUP
+    │
+    ▼
+PICKED_UP
+    │
+    ▼
+OUT_FOR_DELIVERY
+    │
+    ▼
+DELIVERED
+```
+
+---
+
+# ⚡ Redis Architecture
+
+Redis is used for:
+
+* OTP Storage
+* Session Management
+* Rate Limiting
+* API Caching
+* Socket Mapping
+* Live Tracking Cache
+
+Example Keys:
 
 ```bash
 otp:9876543210
+
 otp_attempts:9876543210
+
 otp_resend:9876543210
+
 socket:userId
+
+driver_location:userId
 ```
 
 ---
 
-# 🛡️ Security Features
+# 🔌 Real-Time Socket.IO System
 
-## Implemented
+## Customer Events
 
-* JWT Authentication
-* Role-based access
-* OTP expiry
-* Rate limiting
-* Validation middleware
-* Error handling middleware
-* Protected routes
+* Order Updates
+* Delivery Tracking
+* Notifications
+
+## Restaurant Events
+
+* New Orders
+* Order Status Updates
+
+## Delivery Partner Events
+
+* Nearby Orders
+* Order Assignment
+* Live Location Sharing
 
 ---
 
-# 📦 MongoDB Usage
+# 📡 Live Tracking Architecture
 
-MongoDB stores:
+```text
+Delivery Partner
+        │
+        ▼
+Socket.IO Event
+        │
+        ▼
+Redis Cache
+        │
+        ▼
+Order Tracking Service
+        │
+        ▼
+Customer Live Tracking Page
+```
+
+---
+
+# 🧾 Database Architecture
+
+## MongoDB
+
+Stores:
 
 * Users
 * Restaurants
@@ -413,148 +464,124 @@ MongoDB stores:
 * Orders
 * Menus
 * Reviews
+* Addresses
 * Notifications
-* Live locations
 
 ---
 
-# 🧾 PostgreSQL Usage
+## PostgreSQL
 
-PostgreSQL stores:
+Stores:
 
 * Payments
 * Wallets
 * Transactions
-* Commission reports
-* Financial analytics
+* Commissions
+* Revenue Reports
 * Payouts
+* Financial Analytics
 
 ---
 
-# 🔌 Socket.IO Features
-
-## Customer
-
-* Live order tracking
-* Delivery tracking
-* Notifications
-
----
-
-## Restaurant
-
-* New order alerts
-* Live order updates
-
----
-
-## Delivery Partner
-
-* Nearby order requests
-* Live delivery tracking
-* Online/offline updates
-
----
-
-# 🧪 Validation Architecture
+# 🛡️ Validation Architecture
 
 Using:
 
 * Zod
-* Custom validate middleware
+* Custom Validation Middleware
 
 Example:
 
 ```js
-req.body = await schema.parseAsync(req.body);
+router.post(
+  "/create",
+  validate(createRestaurantSchema),
+  createRestaurant
+);
 ```
 
-Validation includes:
+Validation Covers:
 
-* Restaurant validation
-* Partner validation
-* Delivery partner validation
-* Auth validation
+* Request Body
+* Query Parameters
+* Route Parameters
+* File Upload Validation
 
 ---
 
 # 📊 Pagination & Sorting
 
-Implemented:
+Features:
 
-* Pagination
 * Search
-* Filtering
-* Dynamic sorting
+* Pagination
+* Dynamic Sorting
+* Advanced Filtering
 
 Example:
 
 ```bash
-?page=1&limit=10&sortBy=rating&order=desc
+?page=1
+&limit=10
+&sortBy=rating
+&order=desc
 ```
 
 ---
 
-# 🏗️ Professional Backend Practices
-
-## Current Architecture Includes
-
-✅ Async handler
-✅ Centralized error handling
-✅ Enum architecture
-✅ Validation middleware
-✅ Geo queries
-✅ JWT authentication
-✅ Multi-role system
-✅ Redis caching
-✅ Socket architecture
-✅ Pagination & filtering
-✅ Scalable folder structure
-✅ Database indexing
-
----
-
-# 📈 MongoDB Indexing
-
-Implemented indexes:
+# 📈 Database Indexing
 
 ```js
-restaurantSchema.index({ location: "2dsphere" });
+restaurantSchema.index({
+  location: "2dsphere",
+});
 
-restaurantSchema.index({ status: 1 });
+restaurantSchema.index({
+  status: 1,
+});
 
-restaurantSchema.index({ isFeatured: 1 });
+restaurantSchema.index({
+  isFeatured: 1,
+});
 
-restaurantSchema.index({ isOpen: 1 });
+restaurantSchema.index({
+  isOpen: 1,
+});
 
-restaurantSchema.index({ cuisines: 1 });
+restaurantSchema.index({
+  cuisines: 1,
+});
 
-restaurantSchema.index({ rating: -1 });
+restaurantSchema.index({
+  rating: -1,
+});
 
-restaurantSchema.index({ restaurantName: "text" });
+restaurantSchema.index({
+  restaurantName: "text",
+});
 ```
 
 ---
 
-# 🎯 Current Main Controllers
+# 🎯 Core Controllers
 
-## Restaurant Controllers
+## Restaurant
 
 * createRestaurant
 * updateRestaurant
 * deleteRestaurant
-* getMyRestaurants
 * getRestaurantById
+* getMyRestaurants
 * getAllRestaurants
-* getNearbyRestaurants
 * getFeaturedRestaurants
+* getNearbyRestaurants
 * toggleRestaurantOpenStatus
 * featureRestaurant
 * blockRestaurant
 
 ---
 
-## Restaurant Partner Controllers
+## Restaurant Partner
 
 * applyRestaurantPartner
 * approvePartner
@@ -565,7 +592,7 @@ restaurantSchema.index({ restaurantName: "text" });
 
 ---
 
-## Delivery Partner Controllers
+## Delivery Partner
 
 * applyDeliveryPartner
 * approveDeliveryPartner
@@ -579,52 +606,87 @@ restaurantSchema.index({ restaurantName: "text" });
 
 ---
 
-# 🚀 Future Modules
+## Orders
+
+* placeOrder
+* cancelOrder
+* getOrderDetails
+* getMyOrders
+* updateOrderStatus
+* assignDeliveryPartner
+* liveTracking
+
+---
+
+# 🚀 Planned Features
 
 ## Customer
 
 * Wishlist
-* Coupons
 * Wallet
-* Referral system
-
----
+* Coupons
+* Referral Program
+* Subscription Plans
 
 ## Restaurant
 
-* Inventory
-* Restaurant analytics
-* Earnings dashboard
-
----
+* Inventory Management
+* Restaurant Analytics
+* Smart Recommendations
 
 ## Delivery
 
-* Route optimization
-* Heat maps
-* Incentives
-
----
+* Route Optimization
+* Heat Maps
+* Incentive Programs
 
 ## Admin
 
-* Fraud detection
-* Revenue reports
-* Live dashboards
-* Commission management
+* Fraud Detection
+* Revenue Dashboard
+* Live Monitoring
+* Commission Management
 
 ---
 
-# 🎯 Final Goal
+# 🏆 Engineering Practices
 
-Build a highly scalable production-ready food delivery platform with:
+### Implemented
 
 * Clean Architecture
-* Enterprise Backend Design
-* Redis Optimization
-* Real-time Socket System
-* Professional Validation System
-* Geo-based Search
-* Multi-role Authentication
-* Advanced Filtering & Pagination
+* Service Layer Pattern
+* Repository Pattern Ready
+* Async Handler
+* Centralized Error Handling
+* Role Based Authorization
+* Zod Validation
+* JWT Authentication
+* Redis Caching
+* Socket.IO Integration
+* MongoDB Indexing
+* Pagination & Filtering
+* Geospatial Queries
+* Production Ready Folder Structure
+
+---
+
+# 🎯 Project Goal
+
+Build a highly scalable, production-ready food delivery platform capable of supporting:
+
+* Millions of Users
+* Thousands of Restaurants
+* Thousands of Delivery Partners
+* Real-Time Order Tracking
+* Secure Authentication
+* High Performance APIs
 * Scalable Database Design
+* Enterprise-Level Architecture
+
+---
+
+## Developed By
+
+### BiteRush Engineering Team
+
+Building the next-generation food delivery ecosystem with modern backend architecture and real-time technologies.

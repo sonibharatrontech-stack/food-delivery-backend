@@ -432,12 +432,7 @@ export const autoAssignDeliveryPartner = async (req, res) => {
     | UPDATE ORDER USING SERVICE
     |------------------------------------------------------------------
     */
-    if (!nearestPartner) {
-      return res.status(404).json({
-        success: false,
-        message: "No delivery partner available nearby",
-      });
-    }
+
     const updatedOrder = await updateOrderStatus({
       orderId: order._id,
 
@@ -564,22 +559,20 @@ export const acceptOrder = async (req, res) => {
 
     /*
     |------------------------------------------------------------------
-    | UPDATE ORDER
+    | UPDATE ORDER USING FSM SERVICE
     |------------------------------------------------------------------
     */
 
-    order.deliveryPartner = partner._id;
+    const updatedOrder = await updateOrderStatus({
+      orderId: order._id,
 
-    order.orderStatus = "ASSIGNED";
+      newStatus: "ASSIGNED",
 
-    order.assignedAt = new Date();
-
-    order.statusTimeline.push({
-      status: "ASSIGNED",
-      changedAt: new Date(),
+      extraFields: {
+        deliveryPartner: partner._id,
+        assignedAt: new Date(),
+      },
     });
-
-    await order.save();
 
     /*
     |------------------------------------------------------------------
@@ -589,7 +582,7 @@ export const acceptOrder = async (req, res) => {
 
     partner.isBusy = true;
 
-    partner.currentOrder = order._id;
+    partner.currentOrder = updatedOrder._id;
 
     await partner.save();
 
@@ -601,20 +594,20 @@ export const acceptOrder = async (req, res) => {
 
     const io = getIO();
 
-    io.to(order._id.toString()).emit("order-assigned", {
-      orderId: order._id,
+    io.to(updatedOrder._id.toString()).emit("order-assigned", {
+      orderId: updatedOrder._id,
       partnerId: partner._id,
       message: "Delivery partner assigned",
     });
 
     console.log(
-      `📦 Order ${order._id} assigned to partner ${partner.partnerId}`,
+      `📦 Order ${updatedOrder._id} assigned to partner ${partner.partnerId}`,
     );
 
     return res.status(200).json({
       success: true,
       message: "Order accepted successfully",
-      data: order,
+      data: updatedOrder,
     });
   } catch (error) {
     return res.status(500).json({
@@ -978,11 +971,6 @@ export const getMyDeliveryProfile = asyncHandler(async (req, res) => {
   });
 });
 
-// ======================================================
-// UPDATE DELIVERY PARTNER PROFILE
-
-// ======================================================
-
 export const updateDeliveryPartnerProfile = asyncHandler(async (req, res) => {
   const {
     vehicleType,
@@ -1032,210 +1020,5 @@ export const updateDeliveryPartnerProfile = asyncHandler(async (req, res) => {
     success: true,
     message: "Profile updated successfully",
     partner,
-  });
-});
-
-// ======================================================
-// ADMIN - GET ALL DELIVERY PARTNERS
-
-// ======================================================
-
-export const getAllDeliveryPartners = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, search, status, isOnline } = req.query;
-
-  const filter = {};
-
-  // SEARCH
-  if (search?.trim()) {
-    const users = await User.find({
-      $or: [
-        {
-          name: {
-            $regex: search.trim(),
-            $options: "i",
-          },
-        },
-        {
-          phone: {
-            $regex: search.trim(),
-            $options: "i",
-          },
-        },
-      ],
-    }).select("_id");
-
-    filter.user = {
-      $in: users.map((user) => user._id),
-    };
-  }
-
-  // STATUS FILTER
-  if (status) {
-    filter.status = status;
-  }
-
-  // ONLINE FILTER
-  if (isOnline !== undefined) {
-    filter.isOnline = isOnline === "true";
-  }
-
-  const pageNumber = Math.max(Number(page), 1);
-
-  const limitNumber = Math.max(Number(limit), 1);
-
-  const skip = (pageNumber - 1) * limitNumber;
-
-  const partners = await DeliveryPartner.find(filter)
-    .populate("user", "name email phone")
-    .sort({
-      createdAt: -1,
-    })
-    .skip(skip)
-    .limit(limitNumber)
-    .lean();
-
-  const totalPartners = await DeliveryPartner.countDocuments(filter);
-
-  return res.status(200).json({
-    success: true,
-
-    totalPartners,
-
-    currentPage: pageNumber,
-
-    totalPages: Math.ceil(totalPartners / limitNumber),
-
-    count: partners.length,
-
-    partners,
-  });
-});
-
-// ======================================================
-// ADMIN - GET SINGLE DELIVERY PARTNER
-
-// ======================================================
-
-export const getDeliveryPartnerById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const partner = await DeliveryPartner.findById(id)
-    .populate("user", "name email phone profileImage")
-    .populate("currentOrder");
-
-  if (!partner) {
-    throw new ApiError(404, "Delivery partner not found");
-  }
-
-  return res.status(200).json({
-    success: true,
-    partner,
-  });
-});
-
-// ======================================================
-// ADMIN - APPROVE DELIVERY PARTNER
-
-// ======================================================
-
-export const approveDeliveryPartner = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const partner = await DeliveryPartner.findById(id);
-
-  if (!partner) {
-    throw new ApiError(404, "Delivery partner not found");
-  }
-
-  // ALREADY APPROVED
-  if (partner.status === "APPROVED") {
-    throw new ApiError(400, "Delivery partner already approved");
-  }
-
-  // UPDATE PARTNER STATUS
-  partner.status = "APPROVED";
-
-  partner.documentsVerified = true;
-
-  await partner.save();
-
-  // ADD DELIVERY PARTNER ROLE TO USER
-  await User.findByIdAndUpdate(
-    partner.user,
-    {
-      $addToSet: {
-        roles: Roles.DELIVERY_PARTNER,
-      },
-    },
-    {
-      new: true,
-    },
-  );
-
-  return res.status(200).json({
-    success: true,
-    message: "Delivery partner approved successfully",
-    partner,
-  });
-});
-
-// ======================================================
-// ADMIN - REJECT DELIVERY PARTNER
-
-// ======================================================
-
-export const rejectDeliveryPartner = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const partner = await DeliveryPartner.findById(id);
-
-  if (!partner) {
-    throw new ApiError(404, "Delivery partner not found");
-  }
-
-  partner.status = "REJECTED";
-
-  await partner.save();
-
-  return res.status(200).json({
-    success: true,
-    message: "Delivery partner rejected",
-  });
-});
-
-// ======================================================
-// ADMIN - BLOCK DELIVERY PARTNER
-
-// ======================================================
-
-export const blockDeliveryPartner = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-
-  const partner = await DeliveryPartner.findById(id);
-
-  if (!partner) {
-    throw new ApiError(404, "Delivery partner not found");
-  }
-
-  partner.status = "BLOCKED";
-
-  partner.isOnline = false;
-
-  partner.isAvailable = false;
-
-  partner.isBusy = false;
-
-  await partner.save();
-
-  // REMOVE DELIVERY PARTNER ROLE
-  await User.findByIdAndUpdate(partner.user, {
-    $pull: {
-      roles: Roles.DELIVERY_PARTNER,
-    },
-  });
-
-  return res.status(200).json({
-    success: true,
-    message: "Delivery partner blocked successfully",
   });
 });

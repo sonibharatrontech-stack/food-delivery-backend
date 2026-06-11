@@ -9,11 +9,23 @@ import { calculateETA } from "../utils/calculateETA.js";
 | PLACE ORDER
 |------------------------------------------------------------------
 */
-
 export const placeOrder = async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.body.restaurant);
+    console.log("Restaurant:");
+    console.log(restaurant);
 
+    console.log("Restaurant Location:");
+    console.log(restaurant.location);
+
+    console.log("Restaurant Coordinates:");
+    console.log(restaurant.location.coordinates);
+
+    console.log("Order Payload:");
+    console.log({
+      type: "Point",
+      coordinates: restaurant.location.coordinates,
+    });
     if (!restaurant) {
       return res.status(404).json({
         success: false,
@@ -24,7 +36,13 @@ export const placeOrder = async (req, res) => {
     const order = await Order.create({
       ...req.body,
 
-      restaurantLocation: restaurant.location.coordinates,
+      // restaurantLocation:
+      //   restaurant.location.coordinates,
+
+      restaurantLocation: {
+        type: "Point",
+        coordinates: restaurant.location.coordinates,
+      },
     });
 
     return res.status(201).json({

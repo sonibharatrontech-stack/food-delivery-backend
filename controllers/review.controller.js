@@ -1,10 +1,8 @@
-// review.controller.js
 import Review from "../models/review.model.js";
 import mongoose from "mongoose";
 
-// Import models that exist
-import "../models/order.model.js";
-import "../models/restaurant.model.js";
+import Order from "../models/order.model.js";
+import Restaurant from "../models/restaurant.model.js";
 
 // ─── Helpers ─────────────────────────────────────────────────────────
 
@@ -30,21 +28,105 @@ const handleError = (res, error, statusCode = 500) => {
   });
 };
 
+/*
+|------------------------------------------------------------------
+| UPDATE RESTAURANT RATING
+|------------------------------------------------------------------
+*/
+
+const updateRestaurantRating = async (restaurantId) => {
+  const reviews = await Review.find({
+    restaurant: restaurantId,
+    status: "ACTIVE",
+  });
+
+  if (!reviews.length) {
+    await Restaurant.findByIdAndUpdate(restaurantId, {
+      rating: 0,
+    });
+
+    return;
+  }
+
+  const average =
+    reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length;
+
+  await Restaurant.findByIdAndUpdate(restaurantId, {
+    rating: Number(average.toFixed(1)),
+  });
+};
 // ─── Create Review ───────────────────────────────────────────────────
 
 export const createReview = async (req, res) => {
   try {
     const { user, restaurant, order, rating, comment, images } = req.body;
 
+    /*
+    |------------------------------------------------------------------
+    | ORDER VALIDATION
+    |------------------------------------------------------------------
+    */
+
     if (order) {
-      const existing = await Review.findOne({ user, order });
-      if (existing) {
+      const orderData = await Order.findById(order);
+
+      if (!orderData) {
+        return res.status(404).json({
+          success: false,
+          message: "Order not found",
+        });
+      }
+
+      /*
+      |------------------------------------------------------------------
+      | ONLY DELIVERED ORDERS
+      |------------------------------------------------------------------
+      */
+
+      if (orderData.orderStatus !== "DELIVERED") {
+        return res.status(400).json({
+          success: false,
+          message: "Review allowed only after delivery",
+        });
+      }
+
+      /*
+      |------------------------------------------------------------------
+      | ORDER OWNERSHIP
+      |------------------------------------------------------------------
+      */
+
+      if (orderData.customer.toString() !== user) {
+        return res.status(403).json({
+          success: false,
+          message: "You can review only your own order",
+        });
+      }
+
+      /*
+      |------------------------------------------------------------------
+      | DUPLICATE REVIEW CHECK
+      |------------------------------------------------------------------
+      */
+
+      const existingReview = await Review.findOne({
+        user,
+        order,
+      });
+
+      if (existingReview) {
         return res.status(400).json({
           success: false,
           message: "You have already reviewed this order",
         });
       }
     }
+
+    /*
+    |------------------------------------------------------------------
+    | CREATE REVIEW
+    |------------------------------------------------------------------
+    */
 
     const review = await Review.create({
       user,
@@ -55,6 +137,14 @@ export const createReview = async (req, res) => {
       images: images || [],
     });
 
+    /*
+    |------------------------------------------------------------------
+    | UPDATE RESTAURANT RATING
+    |------------------------------------------------------------------
+    */
+
+    await updateRestaurantRating(restaurant);
+
     const populatedReview = await Review.findById(review._id)
       .populate(
         "restaurant",
@@ -62,7 +152,7 @@ export const createReview = async (req, res) => {
       )
       .populate("order", "orderNumber");
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Review created successfully",
       data: populatedReview,
@@ -161,7 +251,8 @@ export const getRestaurantReviews = async (req, res) => {
 
     const [reviews, total, ratingStats] = await Promise.all([
       Review.find(filter)
-        .populate("order", "orderNumber")
+        .populate("order")
+        .populate("user", "name")
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(Number(limit))
@@ -274,6 +365,8 @@ export const updateReview = async (req, res) => {
     review.isEdited = true;
     await review.save();
 
+    await updateRestaurantRating(review.restaurant);
+
     const populatedReview = await Review.findById(review._id).populate(
       "restaurant",
       "restaurantName description cuisines phone email isOpen rating status",
@@ -293,7 +386,7 @@ export const updateReview = async (req, res) => {
 
 export const deleteReview = async (req, res) => {
   try {
-    const review = await Review.findByIdAndDelete(req.params.id);
+    const review = await Review.findById(req.params.id);
 
     if (!review) {
       return res.status(404).json({
@@ -302,7 +395,13 @@ export const deleteReview = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    const restaurantId = review.restaurant;
+
+    await Review.findByIdAndDelete(req.params.id);
+
+    await updateRestaurantRating(restaurantId);
+
+    return res.status(200).json({
       success: true,
       message: "Review deleted successfully",
     });
@@ -315,11 +414,16 @@ export const deleteReview = async (req, res) => {
 
 export const likeReview = async (req, res) => {
   try {
-    const review = await Review.findByIdAndUpdate(
-      req.params.id,
-      { $inc: { likes: 1 } },
-      { new: true },
-    );
+    console.log("Review ID:", req.params.id);
+    console.log("User:", req.user);
+
+    const { id } = req.params;
+
+    const userId = req.user._id;
+
+    const review = await Review.findById(id);
+
+    console.log("Review:", review);
 
     if (!review) {
       return res.status(404).json({
@@ -328,13 +432,38 @@ export const likeReview = async (req, res) => {
       });
     }
 
-    res.status(200).json({
+    const alreadyLiked = review.likedBy.some(
+      (user) => user.toString() === userId.toString(),
+    );
+
+    console.log("Already liked:", alreadyLiked);
+
+    if (alreadyLiked) {
+      review.likedBy = review.likedBy.filter(
+        (user) => user.toString() !== userId.toString(),
+      );
+
+      review.likes -= 1;
+    } else {
+      review.likedBy.push(userId);
+
+      review.likes += 1;
+    }
+
+    await review.save();
+
+    return res.status(200).json({
       success: true,
-      message: "Review liked",
-      data: { likes: review.likes },
+      likes: review.likes,
+      liked: !alreadyLiked,
     });
   } catch (error) {
-    handleError(res, error);
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: error.message,
+    });
   }
 };
 
@@ -378,6 +507,15 @@ export const updateReviewStatus = async (req, res) => {
       { status },
       { new: true },
     );
+
+    if (!review) {
+      return res.status(404).json({
+        success: false,
+        message: "Review not found",
+      });
+    }
+
+    await updateRestaurantRating(review.restaurant);
 
     if (!review) {
       return res.status(404).json({

@@ -2,10 +2,13 @@ import Cart from "../models/cart.model.js";
 import Order from "../models/order.model.js";
 import Menu from "../models/menu.model.js";
 import Restaurant from "../models/restaurant.model.js";
+import Coupon from "../models/coupon.model.js";
+
+import { createNotification } from "../services/notification.service.js";
 
 export const checkout = async (req, res) => {
   try {
-    const { userId, paymentMethod, deliveryAddress } = req.body;
+    const { userId, paymentMethod, deliveryAddress, couponCode } = req.body;
 
     /*
     |--------------------------------------------------------
@@ -64,6 +67,88 @@ export const checkout = async (req, res) => {
     }
 
     /*
+|--------------------------------------------------------
+| COUPON VALIDATION
+|--------------------------------------------------------
+*/
+
+    let discount = 0;
+
+    if (couponCode) {
+      const coupon = await Coupon.findOne({
+        couponCode: couponCode.toUpperCase(),
+      });
+
+      if (!coupon) {
+        return res.status(404).json({
+          success: false,
+          message: "Coupon not found",
+        });
+      }
+
+      if (!coupon.isActive) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon inactive",
+        });
+      }
+
+      if (coupon.expiryDate < new Date()) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon expired",
+        });
+      }
+
+      if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
+        return res.status(400).json({
+          success: false,
+          message: "Coupon usage limit reached",
+        });
+      }
+
+      if (cart.totalAmount < coupon.minimumOrderAmount) {
+        return res.status(400).json({
+          success: false,
+          message: `Minimum order amount is ₹${coupon.minimumOrderAmount}`,
+        });
+      }
+
+      if (coupon.discountType === "FLAT") {
+        discount = coupon.discountValue;
+      } else {
+        discount = (cart.totalAmount * coupon.discountValue) / 100;
+
+        if (coupon.maximumDiscount > 0) {
+          discount = Math.min(discount, coupon.maximumDiscount);
+        }
+      }
+
+      coupon.usedCount += 1;
+
+      await coupon.save();
+    }
+
+    /*
+|--------------------------------------------------------
+| LOCATION DEBUG
+|--------------------------------------------------------
+*/
+
+    console.log("\n========== CHECKOUT DEBUG ==========");
+
+    console.log("Restaurant:");
+    console.log(restaurant.restaurantName);
+
+    console.log("\nRestaurant Location:");
+    console.log(restaurant.location);
+
+    console.log("\nRestaurant Coordinates:");
+    console.log(restaurant.location.coordinates);
+
+    console.log("\n====================================\n");
+
+    /*
     |--------------------------------------------------------
     | CREATE ORDER
     |--------------------------------------------------------
@@ -76,7 +161,7 @@ export const checkout = async (req, res) => {
 
       restaurantLocation: {
         type: "Point",
-        coordinates: restaurant.location.coordinates.coordinates,
+        coordinates: restaurant.location.coordinates,
       },
 
       items: orderItems,
@@ -100,11 +185,27 @@ export const checkout = async (req, res) => {
 
       deliveryFee: cart.deliveryFee,
 
-      discount: cart.discount,
+      couponCode: couponCode || null,
+
+      discount,
 
       taxes: 0,
 
-      totalAmount: cart.totalAmount,
+      totalAmount: cart.totalAmount - discount,
+    });
+
+    await createNotification({
+      user: userId,
+
+      title: "Order Placed",
+
+      message: "Your order has been placed successfully",
+
+      type: "ORDER",
+
+      metadata: {
+        orderId: order._id,
+      },
     });
 
     /*

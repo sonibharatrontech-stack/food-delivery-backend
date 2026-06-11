@@ -6,11 +6,6 @@ import {
   applyDeliveryPartner,
   getMyDeliveryProfile,
   updateDeliveryPartnerProfile,
-  getAllDeliveryPartners,
-  getDeliveryPartnerById,
-  approveDeliveryPartner,
-  rejectDeliveryPartner,
-  blockDeliveryPartner,
   updateLiveLocation,
   goOnline,
   goOffline,
@@ -76,6 +71,7 @@ router.patch(
 
 // GO ONLINE
 router.patch(
+  
   "/go-online",
   authMiddleware,
   roleMiddleware(Roles.DELIVERY_PARTNER),
@@ -170,50 +166,6 @@ router.patch(
   authMiddleware,
   roleMiddleware(Roles.DELIVERY_PARTNER),
   resetTestOrder,
-);
-
-// ======================================================
-// ADMIN ROUTES
-// ======================================================
-
-// GET ALL DELIVERY PARTNERS
-router.get(
-  "/",
-  authMiddleware,
-  roleMiddleware(Roles.ADMIN, Roles.SUPER_ADMIN),
-  getAllDeliveryPartners,
-);
-
-// GET SINGLE DELIVERY PARTNER
-router.get(
-  "/:id",
-  authMiddleware,
-  roleMiddleware(Roles.ADMIN, Roles.SUPER_ADMIN),
-  getDeliveryPartnerById,
-);
-
-// APPROVE DELIVERY PARTNER
-router.patch(
-  "/approve/:id",
-  authMiddleware,
-  roleMiddleware(Roles.ADMIN, Roles.SUPER_ADMIN),
-  approveDeliveryPartner,
-);
-
-// REJECT DELIVERY PARTNER
-router.patch(
-  "/reject/:id",
-  authMiddleware,
-  roleMiddleware(Roles.ADMIN, Roles.SUPER_ADMIN),
-  rejectDeliveryPartner,
-);
-
-// BLOCK DELIVERY PARTNER
-router.patch(
-  "/block/:id",
-  authMiddleware,
-  roleMiddleware(Roles.ADMIN, Roles.SUPER_ADMIN),
-  blockDeliveryPartner,
 );
 
 export default router;
